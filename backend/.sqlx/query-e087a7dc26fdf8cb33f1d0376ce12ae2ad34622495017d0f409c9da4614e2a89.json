@@ -1,0 +1,104 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                id,\n                name,\n                category,\n                unit,\n                current_stock,\n                reserved_stock,\n                available_stock as \"available_stock!: BigDecimal\",\n                reorder_point,\n                cost_per_unit,\n                default_supplier_id,\n                shelf_life_days,\n                storage_requirements,\n                is_active,\n                created_at,\n                updated_at\n            FROM inventory\n            WHERE is_active = true\n            ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "current_stock",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "reserved_stock",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "available_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "reorder_point",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 8,
+        "name": "cost_per_unit",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 9,
+        "name": "default_supplier_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "shelf_life_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "storage_requirements",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e087a7dc26fdf8cb33f1d0376ce12ae2ad34622495017d0f409c9da4614e2a89"
+}

@@ -1,0 +1,146 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Database",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["up"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Stop Database", 
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["down"],
+            "group": "build"
+        },
+        {
+            "label": "Connect to Database",
+            "type": "shell",
+            "command": "docker",
+            "args": ["exec", "-it", "frederick-ferments-db", "psql", "-U", "postgres", "-d", "frederick_ferments"],
+            "group": "build"
+        },
+        {
+            "label": "Start GraphQL Server (Local)",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["run"],
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Start GraphQL Server (Watch Mode)",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["watch", "-x", "run"],
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Start Full Stack (Docker)",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["up", "--build"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Full Stack (Local API)",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Start Database",
+                "Start GraphQL Server (Local)"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Stop All Services",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["down"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Build API Docker Image",
+            "type": "shell",
+            "command": "docker-compose",
+            "args": ["build", "api"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Restart GraphQL Server",
+            "type": "shell",
+            "command": "cargo",
+            "args": ["run"],
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new",
+                "clear": true
+            },
+            "problemMatcher": "$rustc"
+        },
+        {
+            "label": "Check GraphQL Server Health",
+            "type": "shell",
+            "command": "curl",
+            "args": [
+                "-X", "POST",
+                "-H", "Content-Type: application/json",
+                "-d", "{\"query\":\"query{ping}\"}",
+                "http://localhost:4000/graphql"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

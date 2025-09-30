@@ -1,0 +1,55 @@
+# Dockerfile for Frederick Ferments Rust GraphQL API
+# Place this in your /backend folder
+
+# Multi-stage build for smaller final image
+FROM rust:latest as builder
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Copy manifests
+COPY Cargo.toml Cargo.lock ./
+
+# Copy source code and SQLx cache
+COPY src ./src
+COPY .sqlx ./.sqlx
+
+# Build for release with offline mode
+ENV SQLX_OFFLINE=true
+RUN cargo build --release
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user
+RUN useradd -r -s /bin/false appuser
+
+# Create app directory
+WORKDIR /app
+
+# Copy the binary from builder stage
+COPY --from=builder /usr/src/app/target/release/frederick-ferments-api ./frederick-ferments-api
+
+# Change ownership to app user
+RUN chown appuser:appuser frederick-ferments-api
+
+# Switch to app user
+USER appuser
+
+# Expose port
+EXPOSE 4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:4000/graphql -X POST \
+        -H "Content-Type: application/json" \
+        -d '{"query":"query{ping}"}' || exit 1
+
+# Run the binary
+CMD ["./frederick-ferments-api"]

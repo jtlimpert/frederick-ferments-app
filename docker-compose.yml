@@ -1,0 +1,44 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16
+    container_name: frederick-ferments-db
+    environment:
+      POSTGRES_DB: frederick_ferments
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d frederick_ferments"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Rust GraphQL API
+  api:
+    build:
+      context: ./backend
+      dockerfile: DockerFile
+    container_name: frederick-ferments-api
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/frederick_ferments
+      RUST_LOG: info
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:4000/graphql -X POST -H 'Content-Type: application/json' -d '{\"query\":\"query{ping}\"}' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  postgres_data:
