@@ -141,6 +141,98 @@
                 "reveal": "always",
                 "panel": "shared"
             }
+        },
+        {
+            "label": "Flutter: Run (Select Device)",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Flutter: Run Web",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run", "-d", "chrome"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Flutter: Run macOS",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run", "-d", "macos"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Flutter: Run iOS Simulator",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["run", "-d", "ios"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Flutter: Hot Reload",
+            "type": "shell",
+            "command": "echo",
+            "args": ["Press 'r' in the Flutter terminal for hot reload"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Flutter: Clean",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["clean"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build"
+        },
+        {
+            "label": "Flutter: Get Packages",
+            "type": "shell",
+            "command": "flutter",
+            "args": ["pub", "get"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
+            "group": "build"
         }
     ]
 }
