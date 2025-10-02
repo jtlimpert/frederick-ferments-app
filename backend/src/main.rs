@@ -20,7 +20,6 @@ use axum::{
 };
 use resolvers::{QueryRoot, MutationRoot};
 use sqlx::postgres::PgPoolOptions;
-use std::env;
 use tower_http::cors::CorsLayer;
 
 type ApiSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;

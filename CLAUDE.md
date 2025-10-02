@@ -8,10 +8,12 @@ Frederick Ferments is a fermentation business inventory management system built 
 
 - **Backend**: Rust GraphQL API using async-graphql (v7.0.17) and Axum (v0.8.4)
 - **Database**: PostgreSQL 16 with SQLx for type-safe queries
+- **Frontend**: Flutter (cross-platform: iOS, Android, Web, macOS, Windows, Linux)
+- **State Management**: Riverpod for Flutter
 - **Deployment**: Docker Compose setup with health checks
 - **Runtime**: Tokio async runtime
 
-The system tracks inventory items with fields for stock levels, reorder points, suppliers, and purchase history. The GraphQL API provides queries for inventory items and suppliers, with mutations for purchase operations.
+The system tracks inventory items with fields for stock levels, reorder points, suppliers (with geographic coordinates), and purchase history. The GraphQL API provides queries for inventory items and suppliers, with mutations for purchase operations. The Flutter frontend provides adaptive UI (bottom navigation for mobile, side rail for web/desktop).
 
 ### Key Components
 
@@ -22,9 +24,18 @@ The system tracks inventory items with fields for stock levels, reorder points, 
 - `backend/src/resolvers/mutation.rs`: GraphQL mutation resolvers (create_purchase)
 - `backend/Cargo.toml`: Dependencies configuration
 
+**Frontend Structure:**
+- `frontend/lib/main.dart`: App entry point with theme configuration
+- `frontend/lib/screens/home_screen.dart`: Adaptive navigation wrapper (bottom nav for mobile, side rail for web)
+- `frontend/lib/screens/inventory_list_screen.dart`: Inventory list with stock status indicators
+- `frontend/lib/screens/suppliers_screen.dart`: Suppliers list view (map view planned)
+- `frontend/lib/models/`: Data models (InventoryItem, Supplier)
+- `frontend/lib/services/`: GraphQL service and Riverpod providers
+- `frontend/lib/widgets/`: Reusable UI components (InventoryItemCard)
+
 **Infrastructure:**
 - `docker-compose.yml`: Complete deployment stack with PostgreSQL and API containers
-- `init.sql`: Database schema initialization with sample data
+- `init.sql`: Database schema initialization with sample data (Frederick, MD locations)
 
 ### Database Schema
 
@@ -34,6 +45,8 @@ The system tracks inventory items with fields for stock levels, reorder points, 
    - `id`: UUID (auto-generated)
    - `name`: VARCHAR (NOT NULL)
    - `contact_email`, `contact_phone`, `address`, `notes`: Optional fields
+   - `latitude`: DECIMAL(10, 8) (nullable) - Latitude for map display
+   - `longitude`: DECIMAL(11, 8) (nullable) - Longitude for map display
    - `created_at`, `updated_at`: TIMESTAMPTZ (auto-managed)
 
 2. **inventory** (UUID primary key)
@@ -116,6 +129,39 @@ cargo clippy
 # Update dependencies
 cd backend
 cargo update
+```
+
+### Flutter Development
+```bash
+# Run Flutter app (auto-selects device)
+cd frontend
+flutter run
+
+# Run on specific platform
+flutter run -d chrome         # Web
+flutter run -d macos          # macOS
+flutter run -d ios            # iOS Simulator
+flutter run -d android        # Android Emulator
+
+# Generate Riverpod code after model changes
+cd frontend
+dart run build_runner build --delete-conflicting-outputs
+
+# Get/update dependencies
+flutter pub get
+
+# Clean build artifacts
+flutter clean
+
+# Run tests
+flutter test
+
+# VSCode Tasks (Cmd+Shift+P -> Tasks: Run Task)
+# - Flutter: Run (Select Device)
+# - Flutter: Run Web
+# - Flutter: Run macOS
+# - Flutter: Run iOS Simulator
+# - Flutter: Stop All Devices
 ```
 
 ## GraphQL API
@@ -579,3 +625,74 @@ linter:
   rules:
     # Add additional lint rules here as needed
 ```
+---
+
+## Flutter App Architecture
+
+### Current Features
+
+**Adaptive Navigation:**
+- **Mobile (< 640px width)**: Bottom navigation bar with Inventory and Suppliers tabs
+- **Web/Desktop (≥ 640px width)**: Side navigation rail for better desktop UX
+- Automatically adapts based on screen width using `LayoutBuilder`
+
+**Inventory Screen:**
+- Lists all active inventory items with pull-to-refresh
+- Color-coded stock status indicators:
+  - 🟢 Green (healthy): Stock above 120% of reorder point
+  - 🟠 Orange (low): Stock between reorder point and 120% of reorder point
+  - 🔴 Red (critical): Stock at or below reorder point
+- Shows available stock, reserved stock, cost per unit, and category
+- Progress bars visualizing stock levels
+- Material 3 design with cards and elevation
+
+**Suppliers Screen:**
+- Lists all suppliers with contact information
+- Shows geographic coordinates when available
+- Indicates suppliers with/without coordinates via icons
+- **Planned**: Map view with supplier pins (toggle between list/map)
+
+**Platform-Aware GraphQL Client:**
+- Automatically selects correct endpoint based on platform:
+  - Android emulator: `http://10.0.2.2:4000/graphql` (special host IP)
+  - iOS/macOS/Web: `http://localhost:4000/graphql`
+- Handles BigDecimal to double conversion for numeric fields from backend
+
+### State Management
+
+**Riverpod Providers:**
+- `graphqlClientProvider`: Provides configured GraphQL client
+- `graphqlServiceProvider`: Service layer for GraphQL operations
+- `inventoryItemsProvider`: Async provider for inventory items list
+- `suppliersProvider`: Async provider for suppliers list
+
+**Code Generation:**
+Run `dart run build_runner build --delete-conflicting-outputs` after modifying:
+- Riverpod providers (`@riverpod` annotations)
+- Model classes with serialization
+
+### Data Models
+
+**InventoryItem** (`frontend/lib/models/inventory_item.dart`):
+- Handles all inventory fields including stock levels, costs, supplier relationships
+- `needsReorder` computed property for low stock detection
+- Parses BigDecimal string/number from GraphQL flexibly
+
+**Supplier** (`frontend/lib/models/supplier.dart`):
+- Includes latitude/longitude for map display
+- `hasCoordinates` helper to check if supplier can be shown on map
+- Parses BigDecimal coordinates from GraphQL
+
+### Next Steps / Planned Features
+
+- [ ] Add map view for suppliers using `flutter_map` or `google_maps_flutter`
+- [ ] Toggle between list/map view for suppliers
+- [ ] Add filtering/sorting for inventory items
+- [ ] Search functionality
+- [ ] Detail screens for inventory items and suppliers
+- [ ] Add/edit inventory items and suppliers (CRUD operations)
+- [ ] Purchase recording UI (uses existing `createPurchase` mutation)
+- [ ] Low stock notifications/badges
+- [ ] Dark mode refinements
+- [ ] Offline support with local caching
+
