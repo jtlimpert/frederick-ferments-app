@@ -85,14 +85,14 @@ let uptime = match ctx.data::<std::time::Instant>() {
     /// Get all suppliers
     async fn suppliers(&self, ctx: &Context<'_>) -> Result<Vec<Supplier>> {
         let pool = ctx.data::<PgPool>()?;
-        
+
         let suppliers = sqlx::query_as!(
             Supplier,
-            "SELECT * FROM suppliers ORDER BY name"
+            "SELECT id, name, contact_email, contact_phone, address, latitude, longitude, notes, created_at, updated_at FROM suppliers ORDER BY name"
         )
         .fetch_all(pool)
         .await?;
-        
+
         Ok(suppliers)
     }
 }

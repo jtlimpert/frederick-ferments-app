@@ -1,6 +1,6 @@
 /// Represents a supplier in the Frederick Ferments system.
 ///
-/// Stores contact information and relationship details
+/// Stores contact information, location coordinates, and relationship details
 /// for inventory suppliers.
 class Supplier {
   /// Creates a supplier.
@@ -10,6 +10,8 @@ class Supplier {
     this.contactEmail,
     this.contactPhone,
     this.address,
+    this.latitude,
+    this.longitude,
     this.notes,
     required this.createdAt,
     required this.updatedAt,
@@ -23,10 +25,27 @@ class Supplier {
       contactEmail: json['contactEmail'] as String?,
       contactPhone: json['contactPhone'] as String?,
       address: json['address'] as String?,
+      latitude: json['latitude'] != null
+          ? _parseDouble(json['latitude'])
+          : null,
+      longitude: json['longitude'] != null
+          ? _parseDouble(json['longitude'])
+          : null,
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
+  }
+
+  /// Parses a value to double, handling both String and num types.
+  static double _parseDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.parse(value);
+    }
+    throw FormatException('Cannot parse $value to double');
   }
 
   /// Unique identifier (UUID).
@@ -44,6 +63,12 @@ class Supplier {
   /// Physical or mailing address.
   final String? address;
 
+  /// Latitude coordinate for map display.
+  final double? latitude;
+
+  /// Longitude coordinate for map display.
+  final double? longitude;
+
   /// Additional notes about the supplier relationship.
   final String? notes;
 
@@ -52,4 +77,7 @@ class Supplier {
 
   /// Timestamp when supplier was last updated.
   final DateTime updatedAt;
+
+  /// Whether this supplier has valid coordinates for map display.
+  bool get hasCoordinates => latitude != null && longitude != null;
 }

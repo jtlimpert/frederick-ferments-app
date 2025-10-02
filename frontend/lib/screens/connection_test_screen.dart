@@ -84,11 +84,40 @@ class _ConnectionTestScreenState extends ConsumerState<ConnectionTestScreen> {
     try {
       final service = ref.read(graphqlServiceProvider.notifier);
       final items = await service.getInventoryItems();
-      
+
       if (mounted) {
         setState(() {
           _status = 'Found ${items.length} inventory items:\n'
               '${items.map((i) => i.name).join(', ')}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _status = 'Error: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _testSuppliersFetch() async {
+    setState(() {
+      _isLoading = true;
+      _status = 'Fetching suppliers...';
+    });
+
+    try {
+      final service = ref.read(graphqlServiceProvider.notifier);
+      final suppliers = await service.getSuppliers();
+
+      if (mounted) {
+        setState(() {
+          _status = 'Found ${suppliers.length} suppliers:\n\n'
+              '${suppliers.map((s) => '${s.name}\n'
+                  'Address: ${s.address ?? "N/A"}\n'
+                  'Coords: ${s.hasCoordinates ? "${s.latitude}, ${s.longitude}" : "No coordinates"}').join('\n\n')}';
           _isLoading = false;
         });
       }
@@ -133,6 +162,11 @@ class _ConnectionTestScreenState extends ConsumerState<ConnectionTestScreen> {
               ElevatedButton(
                 onPressed: _isLoading ? null : _testInventoryFetch,
                 child: const Text('Fetch Inventory Items'),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _testSuppliersFetch,
+                child: const Text('Fetch Suppliers with Coordinates'),
               ),
               const SizedBox(height: 32),
               if (_isLoading)

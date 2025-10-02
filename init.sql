@@ -11,6 +11,8 @@ CREATE TABLE suppliers (
     contact_email VARCHAR,
     contact_phone VARCHAR,
     address TEXT,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -56,9 +58,11 @@ CREATE INDEX idx_inventory_log_item ON inventory_log(inventory_id);
 CREATE INDEX idx_inventory_log_date ON inventory_log(created_at);
 
 -- Insert some sample data
-INSERT INTO suppliers (name, contact_email, contact_phone) VALUES
-    ('Local Farm Supply', 'orders@localfarmsupply.com', '555-0123'),
-    ('Organic Ingredients Co', 'sales@organicingredients.com', '555-0456');
+-- Coordinates are for fictional locations in the Frederick, MD area
+INSERT INTO suppliers (name, contact_email, contact_phone, address, latitude, longitude) VALUES
+    ('Local Farm Supply', 'orders@localfarmsupply.com', '555-0123', '123 Farm Road, Frederick, MD 21701', 39.41427, -77.41054),
+    ('Organic Ingredients Co', 'sales@organicingredients.com', '555-0456', '456 Market Street, Frederick, MD 21702', 39.43562, -77.43821),
+    ('Valley Grains & More', 'info@valleygrains.com', '555-0789', '789 Valley Pike, Frederick, MD 21703', 39.38291, -77.38109);
 
 INSERT INTO inventory (name, category, unit, current_stock, reorder_point, cost_per_unit) VALUES
     ('Organic Wheat Flour', 'Grains', 'lbs', 50.0, 10.0, 2.50),

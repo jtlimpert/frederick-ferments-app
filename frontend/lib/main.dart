@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-import 'screens/connection_test_screen.dart';
+import 'screens/home_screen.dart';
 
 /// Entry point for the Frederick Ferments inventory app.
 void main() async {
@@ -38,7 +38,7 @@ class FrederickFermentsApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const ConnectionTestScreen(),
+      home: const HomeScreen(),
     );
   }
 }

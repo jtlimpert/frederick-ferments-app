@@ -52,7 +52,7 @@ final class GraphqlClientProvider
   }
 }
 
-String _$graphqlClientHash() => r'3bbbc687c33c602459cd430a4625f00c0dabd84c';
+String _$graphqlClientHash() => r'eb0e9d29fcf92c64e5e8f98e219cff63eef7f19c';
 
 /// Service for interacting with the Frederick Ferments GraphQL API.
 ///
@@ -99,7 +99,7 @@ final class GraphqlServiceProvider
   }
 }
 
-String _$graphqlServiceHash() => r'8186903b08b43726a7aa8f2cdff49036e5fc247b';
+String _$graphqlServiceHash() => r'fa194bd487b032b046931c67ea601f839d517c27';
 
 /// Service for interacting with the Frederick Ferments GraphQL API.
 ///

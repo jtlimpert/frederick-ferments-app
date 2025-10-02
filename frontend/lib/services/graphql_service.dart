@@ -86,6 +86,8 @@ class GraphqlService extends _$GraphqlService {
         contactEmail
         contactPhone
         address
+        latitude
+        longitude
         notes
         createdAt
         updatedAt
