@@ -83,6 +83,24 @@ The system tracks inventory items with fields for stock levels, reorder points, 
 
 ## Development Commands
 
+### Quick Start (Recommended)
+
+**VSCode Task (Easiest):**
+- Press `Cmd+Shift+P` → "Tasks: Run Task" → "🚀 Start Full Dev Environment (Recommended)"
+- Or press `Cmd+Shift+B` (default build task)
+
+**Manual Script:**
+```bash
+./scripts/dev-start.sh
+```
+
+This script automatically:
+1. Starts the database if not running
+2. Waits for database to be healthy
+3. Checks and regenerates SQLx cache if needed
+4. Builds and starts the full Docker stack
+5. Waits for API to be ready
+
 ### Local Development
 ```bash
 # Start the full stack
@@ -129,7 +147,21 @@ cargo clippy
 # Update dependencies
 cd backend
 cargo update
+
+# Update SQLx offline cache (after changing SQL queries or schema)
+cd backend
+cargo sqlx prepare
+# Then commit: git add .sqlx && git commit -m "Update SQLx cache"
 ```
+
+**About SQLx Offline Mode:**
+- The backend uses `SQLX_OFFLINE=true` to enable Docker builds without a database connection
+- Query metadata is cached in `backend/.sqlx/` directory (committed to git)
+- Update the cache whenever you:
+  - Change SQL queries in the code
+  - Add/modify database columns
+  - Change Rust structs that map to database tables
+- The `dev-start.sh` script automatically checks and updates the cache
 
 ### Flutter Development
 ```bash
