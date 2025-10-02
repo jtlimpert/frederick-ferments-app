@@ -233,6 +233,17 @@
                 "cwd": "${workspaceFolder}/frontend"
             },
             "group": "build"
+        },
+        {
+            "label": "Flutter: Stop All Devices",
+            "type": "shell",
+            "command": "killall Simulator 2>/dev/null || true; adb emu kill 2>/dev/null || true; pkill -f 'flutter run' 2>/dev/null || true",
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "panel": "shared"
+            }
         }
     ]
 }
