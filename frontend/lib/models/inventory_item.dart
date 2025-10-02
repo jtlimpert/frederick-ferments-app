@@ -29,12 +29,12 @@ class InventoryItem {
       name: json['name'] as String,
       category: json['category'] as String,
       unit: json['unit'] as String,
-      currentStock: (json['currentStock'] as num).toDouble(),
-      reservedStock: (json['reservedStock'] as num).toDouble(),
-      availableStock: (json['availableStock'] as num).toDouble(),
-      reorderPoint: (json['reorderPoint'] as num).toDouble(),
+      currentStock: _parseDouble(json['currentStock']),
+      reservedStock: _parseDouble(json['reservedStock']),
+      availableStock: _parseDouble(json['availableStock']),
+      reorderPoint: _parseDouble(json['reorderPoint']),
       costPerUnit: json['costPerUnit'] != null
-          ? (json['costPerUnit'] as num).toDouble()
+          ? _parseDouble(json['costPerUnit'])
           : null,
       defaultSupplierId: json['defaultSupplierId'] as String?,
       shelfLifeDays: json['shelfLifeDays'] as int?,
@@ -43,6 +43,17 @@ class InventoryItem {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
+  }
+
+  /// Parses a value to double, handling both String and num types.
+  static double _parseDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.parse(value);
+    }
+    throw FormatException('Cannot parse $value to double');
   }
 
   /// Unique identifier (UUID).
