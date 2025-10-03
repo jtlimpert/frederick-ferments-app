@@ -17,27 +17,47 @@ class InventoryListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final inventoryAsync = ref.watch(inventoryItemsProvider);
 
+    final body = inventoryAsync.when(
+      data: (items) => _buildInventoryList(context, ref, items),
+      loading: () => _buildLoadingState(),
+      error: (error, stack) => _buildErrorState(context, ref, error),
+    );
+
+    if (showAppBar) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: const Text('Frederick Ferments Inventory'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.invalidate(inventoryItemsProvider);
+              },
+              tooltip: 'Refresh',
+            ),
+          ],
+        ),
+        body: body,
+      );
+    }
+
+    // When embedded in navigation, show title bar without full AppBar
     return Scaffold(
-      appBar: showAppBar
-          ? AppBar(
-              backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-              title: const Text('Frederick Ferments Inventory'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () {
-                    ref.invalidate(inventoryItemsProvider);
-                  },
-                  tooltip: 'Refresh',
-                ),
-              ],
-            )
-          : null,
-      body: inventoryAsync.when(
-        data: (items) => _buildInventoryList(context, ref, items),
-        loading: () => _buildLoadingState(),
-        error: (error, stack) => _buildErrorState(context, ref, error),
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Inventory'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              ref.invalidate(inventoryItemsProvider);
+            },
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
+      body: body,
     );
   }
 
