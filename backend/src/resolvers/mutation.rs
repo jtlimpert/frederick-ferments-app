@@ -17,10 +17,10 @@ impl MutationRoot {
     ) -> Result<PurchaseResult> {
         let pool = ctx.data::<PgPool>()?;
         let mut tx = pool.begin().await?;
-        
-        let purchase_date = input.purchase_date.unwrap_or_else(|| Utc::now());
+
+        let purchase_date = input.purchase_date.unwrap_or_else(Utc::now);
         let mut updated_items = Vec::new();
-        
+
         // Process each item in the purchase
         for item_input in input.items {
             // 1. Add entry to inventory_log
@@ -42,7 +42,7 @@ impl MutationRoot {
             .bind(purchase_date)
             .execute(&mut *tx)
             .await?;
-            
+
             // 2. Update inventory stock and cost
             let updated_item = sqlx::query_as!(
                 InventoryItem,
@@ -77,16 +77,19 @@ impl MutationRoot {
             )
             .fetch_one(&mut *tx)
             .await?;
-            
+
             updated_items.push(updated_item);
         }
-        
+
         // Commit the transaction
         tx.commit().await?;
-        
+
         Ok(PurchaseResult {
             success: true,
-            message: format!("Successfully processed purchase of {} items", updated_items.len()),
+            message: format!(
+                "Successfully processed purchase of {} items",
+                updated_items.len()
+            ),
             updated_items,
         })
     }

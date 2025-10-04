@@ -6,6 +6,7 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/inventory_item.dart';
+import '../models/purchase.dart';
 import '../models/supplier.dart';
 
 part 'graphql_service.g.dart';
@@ -112,6 +113,23 @@ class GraphqlService extends _$GraphqlService {
   static const _pingQuery = r'''
     query Ping {
       ping
+    }
+  ''';
+
+  /// GraphQL mutation to create a purchase.
+  static const _createPurchaseMutation = r'''
+    mutation CreatePurchase($input: CreatePurchaseInput!) {
+      createPurchase(input: $input) {
+        success
+        message
+        updatedItems {
+          id
+          name
+          currentStock
+          availableStock
+          costPerUnit
+        }
+      }
     }
   ''';
 
@@ -242,6 +260,50 @@ class GraphqlService extends _$GraphqlService {
     } catch (e, s) {
       developer.log(
         'Error in ping',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Creates a purchase and updates inventory stock levels.
+  ///
+  /// Records a purchase from a supplier, adding stock to inventory items
+  /// and logging the transaction in the inventory_log table.
+  ///
+  /// Returns a [PurchaseResult] with success status and updated items.
+  /// Throws an exception if the request fails.
+  Future<PurchaseResult> createPurchase(CreatePurchaseInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_createPurchaseMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to create purchase',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final purchaseData = result.data?['createPurchase'] as Map<String, dynamic>?;
+      if (purchaseData == null) {
+        throw Exception('No data returned from createPurchase mutation');
+      }
+
+      return PurchaseResult.fromJson(purchaseData);
+    } catch (e, s) {
+      developer.log(
+        'Error in createPurchase',
         name: 'graphql_service',
         level: 1000,
         error: e,

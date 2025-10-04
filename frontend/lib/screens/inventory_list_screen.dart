@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/inventory_provider.dart';
 import '../widgets/inventory_item_card.dart';
+import 'create_purchase_screen.dart';
 
 /// Main screen displaying the list of inventory items.
 ///
@@ -39,6 +40,17 @@ class InventoryListScreen extends ConsumerWidget {
           ],
         ),
         body: body,
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CreatePurchaseScreen(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.add_shopping_cart),
+          label: const Text('New Purchase'),
+        ),
       );
     }
 
@@ -58,6 +70,17 @@ class InventoryListScreen extends ConsumerWidget {
         ],
       ),
       body: body,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const CreatePurchaseScreen(),
+            ),
+          );
+        },
+        icon: const Icon(Icons.add_shopping_cart),
+        label: const Text('New Purchase'),
+      ),
     );
   }
 

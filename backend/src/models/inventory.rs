@@ -1,6 +1,6 @@
 use async_graphql::*;
-use chrono::{DateTime, Utc};
 use bigdecimal::BigDecimal;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -11,17 +11,17 @@ pub struct InventoryItem {
     pub name: String,
     pub category: String,
     pub unit: String,
-    pub current_stock: BigDecimal,           // NOT NULL
-    pub reserved_stock: BigDecimal,          // NOT NULL
-    pub available_stock: BigDecimal,         // Generated column
-    pub reorder_point: BigDecimal,           // NOT NULL
-    pub cost_per_unit: Option<BigDecimal>,   // NULL allowed
-    pub default_supplier_id: Option<Uuid>,   // NULL allowed
-    pub shelf_life_days: Option<i32>,        // NULL allowed
-    pub storage_requirements: Option<String>,// NULL allowed
-    pub is_active: bool,                     // NOT NULL
-    pub created_at: DateTime<Utc>,           // NOT NULL
-    pub updated_at: DateTime<Utc>,           // NOT NULL
+    pub current_stock: BigDecimal,            // NOT NULL
+    pub reserved_stock: BigDecimal,           // NOT NULL
+    pub available_stock: BigDecimal,          // Generated column
+    pub reorder_point: BigDecimal,            // NOT NULL
+    pub cost_per_unit: Option<BigDecimal>,    // NULL allowed
+    pub default_supplier_id: Option<Uuid>,    // NULL allowed
+    pub shelf_life_days: Option<i32>,         // NULL allowed
+    pub storage_requirements: Option<String>, // NULL allowed
+    pub is_active: bool,                      // NOT NULL
+    pub created_at: DateTime<Utc>,            // NOT NULL
+    pub updated_at: DateTime<Utc>,            // NOT NULL
 }
 
 #[derive(Debug, Clone, FromRow, SimpleObject, Serialize, Deserialize)]
@@ -50,7 +50,7 @@ pub struct CreatePurchaseInput {
 
 #[derive(Debug, InputObject)]
 pub struct PurchaseItemInput {
-    pub inventory_id: Uuid,  // Which item you're buying
+    pub inventory_id: Uuid, // Which item you're buying
     pub quantity: BigDecimal,
     pub unit_cost: BigDecimal, // Cost per unit for this purchase
     pub expiry_date: Option<chrono::NaiveDate>,

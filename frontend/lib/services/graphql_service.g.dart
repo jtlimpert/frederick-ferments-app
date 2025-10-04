@@ -99,7 +99,7 @@ final class GraphqlServiceProvider
   }
 }
 
-String _$graphqlServiceHash() => r'fa194bd487b032b046931c67ea601f839d517c27';
+String _$graphqlServiceHash() => r'9f550a938b143ec8c74e7caaa72cdba5a85f56bf';
 
 /// Service for interacting with the Frederick Ferments GraphQL API.
 ///

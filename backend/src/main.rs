@@ -10,15 +10,15 @@ mod resolvers {
     pub use mutation::*;
 }
 
-use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
+use async_graphql::{EmptySubscription, Schema, http::GraphiQLSource};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
+    Router,
     extract::Extension,
     response::{self, IntoResponse},
     routing::get,
-    Router,
 };
-use resolvers::{QueryRoot, MutationRoot};
+use resolvers::{MutationRoot, QueryRoot};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::cors::CorsLayer;
 
@@ -35,32 +35,33 @@ async fn graphiql() -> impl IntoResponse {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
-    
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://postgres:postgres@localhost:5432/frederick_ferments".to_string());
-    
+
+    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+        "postgresql://postgres:postgres@localhost:5432/frederick_ferments".to_string()
+    });
+
     // Connect to database
     let pool = PgPoolOptions::new()
         .max_connections(10)
         .connect(&database_url)
         .await?;
-    
+
     // Create GraphQL schema
     let schema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(pool)
         .finish();
-    
+
     // Build the app
     let app = Router::new()
         .route("/graphql", get(graphiql).post(graphql_handler))
         .layer(Extension(schema))
         .layer(CorsLayer::permissive());
-    
+
     println!("🚀 GraphQL server running at http://localhost:4000/graphql");
     println!("📊 GraphiQL playground available at http://localhost:4000/graphql");
-    
+
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
