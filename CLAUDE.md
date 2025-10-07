@@ -63,10 +63,10 @@ The system tracks inventory items with fields for stock levels, reorder points, 
    - `is_active`: BOOLEAN (NOT NULL, default true)
    - `created_at`, `updated_at`: TIMESTAMPTZ (auto-managed)
 
-3. **inventory_log** (UUID primary key)
+3. **inventory_logs** (UUID primary key)
    - `id`: UUID (auto-generated)
    - `inventory_id`: UUID (foreign key to inventory, NOT NULL)
-   - `movement_type`: VARCHAR (NOT NULL) - values: 'purchase', 'sale', 'adjustment', 'waste'
+   - `movement_type`: VARCHAR (NOT NULL) - values: 'purchase', 'sale', 'adjustment', 'waste', 'production_use', 'production_output'
    - `quantity`: DECIMAL (NOT NULL)
    - `unit_cost`: DECIMAL (nullable)
    - `reason`: TEXT (nullable)
@@ -74,12 +74,76 @@ The system tracks inventory items with fields for stock levels, reorder points, 
    - `expiry_date`: DATE (nullable)
    - `created_at`: TIMESTAMPTZ (auto-managed)
 
+4. **recipe_templates** (UUID primary key)
+   - `id`: UUID (auto-generated)
+   - `product_inventory_id`: UUID (foreign key to inventory, NOT NULL)
+   - `template_name`: VARCHAR(255) (NOT NULL)
+   - `description`: TEXT (nullable)
+   - `default_batch_size`: DECIMAL(10,3) (nullable)
+   - `default_unit`: VARCHAR(50) (nullable)
+   - `estimated_duration_hours`: DECIMAL(6,2) (nullable)
+   - `reminder_schedule`: JSONB (nullable) - Array of reminder definitions
+   - `ingredient_template`: JSONB (nullable) - Default ingredient ratios
+   - `instructions`: TEXT (nullable)
+   - `is_active`: BOOLEAN (default true)
+   - `created_at`, `updated_at`: TIMESTAMPTZ (auto-managed)
+
+5. **production_batches** (UUID primary key)
+   - `id`: UUID (auto-generated)
+   - `batch_number`: VARCHAR(100) (NOT NULL, UNIQUE)
+   - `product_inventory_id`: UUID (foreign key to inventory, NOT NULL)
+   - `recipe_template_id`: UUID (foreign key to recipe_templates, nullable)
+   - `batch_size`: DECIMAL(10,3) (NOT NULL)
+   - `unit`: VARCHAR(50) (NOT NULL)
+   - `start_date`: TIMESTAMPTZ (NOT NULL, default NOW())
+   - `estimated_completion_date`: TIMESTAMPTZ (nullable)
+   - `completion_date`: TIMESTAMPTZ (nullable)
+   - `production_date`: TIMESTAMPTZ (NOT NULL, default NOW())
+   - `status`: VARCHAR(50) (NOT NULL, default 'in_progress') - values: 'in_progress', 'completed', 'failed'
+   - `production_time_hours`: DECIMAL(6,2) (nullable)
+   - `yield_percentage`: DECIMAL(5,2) (nullable)
+   - `actual_yield`: DECIMAL(10,3) (nullable)
+   - `quality_notes`: TEXT (nullable)
+   - `storage_location`: VARCHAR(100) (nullable)
+   - `notes`: TEXT (nullable)
+   - `created_at`, `updated_at`: TIMESTAMPTZ (auto-managed)
+
+6. **production_batch_ingredients** (UUID primary key)
+   - `id`: UUID (auto-generated)
+   - `batch_id`: UUID (foreign key to production_batches, NOT NULL, CASCADE DELETE)
+   - `ingredient_inventory_id`: UUID (foreign key to inventory, NOT NULL)
+   - `quantity_used`: DECIMAL(10,3) (NOT NULL)
+   - `unit`: VARCHAR(50) (NOT NULL)
+   - `notes`: TEXT (nullable)
+
+7. **production_reminders** (UUID primary key)
+   - `id`: UUID (auto-generated)
+   - `batch_id`: UUID (foreign key to production_batches, NOT NULL, CASCADE DELETE)
+   - `reminder_type`: VARCHAR(50) (NOT NULL)
+   - `message`: TEXT (NOT NULL)
+   - `due_at`: TIMESTAMPTZ (NOT NULL)
+   - `completed_at`: TIMESTAMPTZ (nullable)
+   - `snoozed_until`: TIMESTAMPTZ (nullable)
+   - `notes`: TEXT (nullable)
+   - `created_at`: TIMESTAMPTZ (auto-managed)
+
 **Indexes:**
 - `idx_inventory_active` on inventory(is_active)
 - `idx_inventory_category` on inventory(category)
 - `idx_inventory_supplier` on inventory(default_supplier_id)
-- `idx_inventory_log_item` on inventory_log(inventory_id)
-- `idx_inventory_log_date` on inventory_log(created_at)
+- `idx_inventory_logs_item` on inventory_logs(inventory_id)
+- `idx_inventory_logs_date` on inventory_logs(created_at)
+- `idx_production_batches_date` on production_batches(production_date DESC)
+- `idx_production_batches_start_date` on production_batches(start_date DESC)
+- `idx_production_batches_product` on production_batches(product_inventory_id)
+- `idx_production_batches_status` on production_batches(status)
+- `idx_production_batches_status_active` on production_batches(status, start_date DESC) WHERE status IN ('in_progress')
+- `idx_production_batch_ingredients_batch` on production_batch_ingredients(batch_id)
+- `idx_production_batch_ingredients_ingredient` on production_batch_ingredients(ingredient_inventory_id)
+- `idx_recipe_templates_product` on recipe_templates(product_inventory_id)
+- `idx_recipe_templates_active` on recipe_templates(is_active) WHERE is_active = true
+- `idx_reminders_batch` on production_reminders(batch_id)
+- `idx_reminders_due_pending` on production_reminders(due_at) WHERE completed_at IS NULL
 
 ## Development Commands
 
@@ -362,7 +426,7 @@ mutation {
 **Purchase Flow** (`backend/src/resolvers/mutation.rs:13-92`):
 1. Begins database transaction
 2. For each item in purchase:
-   - Inserts entry into `inventory_log` table with movement_type='purchase'
+   - Inserts entry into `inventory_logs` table with movement_type='purchase'
    - Updates `inventory` table: increments `current_stock`, updates `cost_per_unit`
 3. Commits transaction (atomic - all succeed or all fail)
 4. Returns success status and updated inventory items
@@ -371,7 +435,7 @@ mutation {
 - All operations are transactional (rollback on any error)
 - Stock updates are additive: `current_stock = current_stock + quantity`
 - Cost is updated to the most recent purchase price
-- Audit trail maintained in `inventory_log`
+- Audit trail maintained in `inventory_logs`
 
 ## Environment Configuration
 
@@ -436,7 +500,7 @@ Inventory items use `is_active` flag instead of hard deletes. Queries filter by 
 `available_stock` is computed automatically by PostgreSQL: `current_stock - reserved_stock`
 
 ### Audit Trail
-All inventory movements are logged in `inventory_log` table with movement_type, quantity, cost, and timestamps.
+All inventory movements are logged in `inventory_logs` table with movement_type, quantity, cost, and timestamps.
 
 ### Error Handling
 - GraphQL resolvers return `async_graphql::Result` type

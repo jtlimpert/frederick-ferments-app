@@ -3,7 +3,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
-use crate::models::{InventoryItem, Supplier};
+use crate::models::{InventoryItem, ProductionBatch, ProductionReminder, RecipeTemplate, Supplier};
 
 pub struct QueryRoot;
 
@@ -90,5 +90,211 @@ impl QueryRoot {
         .await?;
 
         Ok(suppliers)
+    }
+
+    /// Get all active production batches (in_progress status)
+    async fn active_batches(&self, ctx: &Context<'_>) -> Result<Vec<ProductionBatch>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let batches = sqlx::query_as!(
+            ProductionBatch,
+            r#"
+            SELECT
+                id, batch_number, product_inventory_id, recipe_template_id,
+                batch_size, unit, start_date, estimated_completion_date,
+                completion_date, production_date, status,
+                production_time_hours, yield_percentage, actual_yield,
+                quality_notes, storage_location, notes,
+                created_at, updated_at
+            FROM production_batches
+            WHERE status = 'in_progress'
+            ORDER BY start_date DESC
+            "#
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(batches)
+    }
+
+    /// Get a specific production batch by ID
+    async fn production_batch(
+        &self,
+        ctx: &Context<'_>,
+        id: uuid::Uuid,
+    ) -> Result<Option<ProductionBatch>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let batch = sqlx::query_as!(
+            ProductionBatch,
+            r#"
+            SELECT
+                id, batch_number, product_inventory_id, recipe_template_id,
+                batch_size, unit, start_date, estimated_completion_date,
+                completion_date, production_date, status,
+                production_time_hours, yield_percentage, actual_yield,
+                quality_notes, storage_location, notes,
+                created_at, updated_at
+            FROM production_batches
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(batch)
+    }
+
+    /// Get production history with optional filters
+    async fn production_history(
+        &self,
+        ctx: &Context<'_>,
+        product_inventory_id: Option<uuid::Uuid>,
+        limit: Option<i32>,
+    ) -> Result<Vec<ProductionBatch>> {
+        let pool = ctx.data::<PgPool>()?;
+        let limit = limit.unwrap_or(50).min(500); // Default 50, max 500
+
+        let batches = if let Some(product_id) = product_inventory_id {
+            sqlx::query_as!(
+                ProductionBatch,
+                r#"
+                SELECT
+                    id, batch_number, product_inventory_id, recipe_template_id,
+                    batch_size, unit, start_date, estimated_completion_date,
+                    completion_date, production_date, status,
+                    production_time_hours, yield_percentage, actual_yield,
+                    quality_notes, storage_location, notes,
+                    created_at, updated_at
+                FROM production_batches
+                WHERE product_inventory_id = $1
+                ORDER BY start_date DESC
+                LIMIT $2
+                "#,
+                product_id,
+                limit as i64
+            )
+            .fetch_all(pool)
+            .await?
+        } else {
+            sqlx::query_as!(
+                ProductionBatch,
+                r#"
+                SELECT
+                    id, batch_number, product_inventory_id, recipe_template_id,
+                    batch_size, unit, start_date, estimated_completion_date,
+                    completion_date, production_date, status,
+                    production_time_hours, yield_percentage, actual_yield,
+                    quality_notes, storage_location, notes,
+                    created_at, updated_at
+                FROM production_batches
+                ORDER BY start_date DESC
+                LIMIT $1
+                "#,
+                limit as i64
+            )
+            .fetch_all(pool)
+            .await?
+        };
+
+        Ok(batches)
+    }
+
+    /// Get all active recipe templates
+    async fn recipe_templates(&self, ctx: &Context<'_>) -> Result<Vec<RecipeTemplate>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let templates = sqlx::query_as!(
+            RecipeTemplate,
+            r#"
+            SELECT
+                id, product_inventory_id, template_name, description,
+                default_batch_size, default_unit, estimated_duration_hours,
+                reminder_schedule, ingredient_template, instructions,
+                is_active as "is_active!", created_at, updated_at
+            FROM recipe_templates
+            WHERE is_active = true
+            ORDER BY template_name
+            "#
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(templates)
+    }
+
+    /// Get a specific recipe template by ID
+    async fn recipe_template(
+        &self,
+        ctx: &Context<'_>,
+        id: uuid::Uuid,
+    ) -> Result<Option<RecipeTemplate>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let template = sqlx::query_as!(
+            RecipeTemplate,
+            r#"
+            SELECT
+                id, product_inventory_id, template_name, description,
+                default_batch_size, default_unit, estimated_duration_hours,
+                reminder_schedule, ingredient_template, instructions,
+                is_active as "is_active!", created_at, updated_at
+            FROM recipe_templates
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(template)
+    }
+
+    /// Get all pending reminders for active batches
+    async fn pending_reminders(&self, ctx: &Context<'_>) -> Result<Vec<ProductionReminder>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let reminders = sqlx::query_as!(
+            ProductionReminder,
+            r#"
+            SELECT
+                id, batch_id, reminder_type, message, due_at,
+                completed_at, snoozed_until, notes, created_at
+            FROM production_reminders
+            WHERE completed_at IS NULL
+            ORDER BY due_at ASC
+            "#
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(reminders)
+    }
+
+    /// Get reminders for a specific batch
+    async fn batch_reminders(
+        &self,
+        ctx: &Context<'_>,
+        batch_id: uuid::Uuid,
+    ) -> Result<Vec<ProductionReminder>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let reminders = sqlx::query_as!(
+            ProductionReminder,
+            r#"
+            SELECT
+                id, batch_id, reminder_type, message, due_at,
+                completed_at, snoozed_until, notes, created_at
+            FROM production_reminders
+            WHERE batch_id = $1
+            ORDER BY due_at ASC
+            "#,
+            batch_id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(reminders)
     }
 }

@@ -99,7 +99,7 @@ final class GraphqlServiceProvider
   }
 }
 
-String _$graphqlServiceHash() => r'9f550a938b143ec8c74e7caaa72cdba5a85f56bf';
+String _$graphqlServiceHash() => r'1df2a68b4ba6493b6653dae8513e8a486aba3223';
 
 /// Service for interacting with the Frederick Ferments GraphQL API.
 ///
@@ -124,3 +124,286 @@ abstract class _$GraphqlService extends $Notifier<void> {
     element.handleValue(ref, null);
   }
 }
+
+/// Riverpod provider for active production batches.
+
+@ProviderFor(activeBatches)
+const activeBatchesProvider = ActiveBatchesProvider._();
+
+/// Riverpod provider for active production batches.
+
+final class ActiveBatchesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ProductionBatch>>,
+          List<ProductionBatch>,
+          FutureOr<List<ProductionBatch>>
+        >
+    with
+        $FutureModifier<List<ProductionBatch>>,
+        $FutureProvider<List<ProductionBatch>> {
+  /// Riverpod provider for active production batches.
+  const ActiveBatchesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'activeBatchesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$activeBatchesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ProductionBatch>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ProductionBatch>> create(Ref ref) {
+    return activeBatches(ref);
+  }
+}
+
+String _$activeBatchesHash() => r'f785aa45dd4aac259acdf451fa4229f52216a1fa';
+
+/// Riverpod provider for production history.
+
+@ProviderFor(productionHistory)
+const productionHistoryProvider = ProductionHistoryFamily._();
+
+/// Riverpod provider for production history.
+
+final class ProductionHistoryProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ProductionBatch>>,
+          List<ProductionBatch>,
+          FutureOr<List<ProductionBatch>>
+        >
+    with
+        $FutureModifier<List<ProductionBatch>>,
+        $FutureProvider<List<ProductionBatch>> {
+  /// Riverpod provider for production history.
+  const ProductionHistoryProvider._({
+    required ProductionHistoryFamily super.from,
+    required ({String? productInventoryId, int limit}) super.argument,
+  }) : super(
+         retry: null,
+         name: r'productionHistoryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$productionHistoryHash();
+
+  @override
+  String toString() {
+    return r'productionHistoryProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ProductionBatch>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ProductionBatch>> create(Ref ref) {
+    final argument = this.argument as ({String? productInventoryId, int limit});
+    return productionHistory(
+      ref,
+      productInventoryId: argument.productInventoryId,
+      limit: argument.limit,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ProductionHistoryProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$productionHistoryHash() => r'142c842509920db420d98e51180bbea813d077f3';
+
+/// Riverpod provider for production history.
+
+final class ProductionHistoryFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<ProductionBatch>>,
+          ({String? productInventoryId, int limit})
+        > {
+  const ProductionHistoryFamily._()
+    : super(
+        retry: null,
+        name: r'productionHistoryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Riverpod provider for production history.
+
+  ProductionHistoryProvider call({
+    String? productInventoryId,
+    int limit = 50,
+  }) => ProductionHistoryProvider._(
+    argument: (productInventoryId: productInventoryId, limit: limit),
+    from: this,
+  );
+
+  @override
+  String toString() => r'productionHistoryProvider';
+}
+
+/// Riverpod provider for finished products (filtered inventory items).
+
+@ProviderFor(finishedProducts)
+const finishedProductsProvider = FinishedProductsProvider._();
+
+/// Riverpod provider for finished products (filtered inventory items).
+
+final class FinishedProductsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<InventoryItem>>,
+          List<InventoryItem>,
+          FutureOr<List<InventoryItem>>
+        >
+    with
+        $FutureModifier<List<InventoryItem>>,
+        $FutureProvider<List<InventoryItem>> {
+  /// Riverpod provider for finished products (filtered inventory items).
+  const FinishedProductsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'finishedProductsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$finishedProductsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<InventoryItem>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<InventoryItem>> create(Ref ref) {
+    return finishedProducts(ref);
+  }
+}
+
+String _$finishedProductsHash() => r'0379022a45f5a56f2e86e5b78c2edc6fdf0e3e62';
+
+/// Riverpod provider for recipe templates.
+
+@ProviderFor(recipeTemplates)
+const recipeTemplatesProvider = RecipeTemplatesProvider._();
+
+/// Riverpod provider for recipe templates.
+
+final class RecipeTemplatesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<RecipeTemplate>>,
+          List<RecipeTemplate>,
+          FutureOr<List<RecipeTemplate>>
+        >
+    with
+        $FutureModifier<List<RecipeTemplate>>,
+        $FutureProvider<List<RecipeTemplate>> {
+  /// Riverpod provider for recipe templates.
+  const RecipeTemplatesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recipeTemplatesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recipeTemplatesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<RecipeTemplate>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<RecipeTemplate>> create(Ref ref) {
+    return recipeTemplates(ref);
+  }
+}
+
+String _$recipeTemplatesHash() => r'0e50e49c4655944f9562b77cead69bc655af83e7';
+
+/// Riverpod provider for pending reminders.
+
+@ProviderFor(pendingReminders)
+const pendingRemindersProvider = PendingRemindersProvider._();
+
+/// Riverpod provider for pending reminders.
+
+final class PendingRemindersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ProductionReminder>>,
+          List<ProductionReminder>,
+          FutureOr<List<ProductionReminder>>
+        >
+    with
+        $FutureModifier<List<ProductionReminder>>,
+        $FutureProvider<List<ProductionReminder>> {
+  /// Riverpod provider for pending reminders.
+  const PendingRemindersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pendingRemindersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingRemindersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<ProductionReminder>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<ProductionReminder>> create(Ref ref) {
+    return pendingReminders(ref);
+  }
+}
+
+String _$pendingRemindersHash() => r'94b4d28313f41287dda47dbab7f6fc8f41fa4608';

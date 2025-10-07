@@ -1,6 +1,8 @@
 mod models {
     pub mod inventory;
+    pub mod production;
     pub use inventory::*;
+    pub use production::*;
 }
 
 mod resolvers {

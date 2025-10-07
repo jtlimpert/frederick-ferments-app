@@ -1,0 +1,92 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id, product_inventory_id, template_name, description,\n                default_batch_size, default_unit, estimated_duration_hours,\n                reminder_schedule, ingredient_template, instructions,\n                is_active as \"is_active!\", created_at, updated_at\n            FROM recipe_templates\n            WHERE is_active = true\n            ORDER BY template_name\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_inventory_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "template_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "default_batch_size",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "default_unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "estimated_duration_hours",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "reminder_schedule",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "ingredient_template",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 9,
+        "name": "instructions",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "is_active!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "6e817220d60abf7ff884af0147720e751592288488528118c4233654fc1ef293"
+}

@@ -1,0 +1,128 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                id, batch_number, product_inventory_id, recipe_template_id,\n                batch_size, unit, start_date, estimated_completion_date,\n                completion_date, production_date, status,\n                production_time_hours, yield_percentage, actual_yield,\n                quality_notes, storage_location, notes,\n                created_at, updated_at\n            FROM production_batches\n            WHERE status = 'in_progress'\n            ORDER BY start_date DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "batch_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "product_inventory_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "recipe_template_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "batch_size",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "start_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "estimated_completion_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "completion_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "production_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "production_time_hours",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 12,
+        "name": "yield_percentage",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 13,
+        "name": "actual_yield",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 14,
+        "name": "quality_notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "storage_location",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 17,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 18,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "caa394a79fa9b02ae04bdb235838dff00e347348eb646d8f7f12b63c74a05a29"
+}

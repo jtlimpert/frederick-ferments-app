@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE production_reminders\n            SET completed_at = $1, notes = $2\n            WHERE id = $3 AND completed_at IS NULL\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "075459c6c5bc3d9dcb1db2718c6821daa2841c5e366f60eec61ba8b61f45da1d"
+}

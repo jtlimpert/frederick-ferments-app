@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE production_batches\n            SET status = 'failed',\n                completion_date = $1,\n                quality_notes = $2,\n                updated_at = $1\n            WHERE id = $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d41e9e47ad992df6b7bb2bad80548c4466a077abcf85060ff45d47cd481e4819"
+}

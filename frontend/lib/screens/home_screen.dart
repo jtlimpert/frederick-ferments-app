@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'inventory_list_screen.dart';
+import 'production_screen.dart';
 import 'suppliers_screen.dart';
 
 /// Main home screen with adaptive navigation.
@@ -25,6 +26,11 @@ class _HomeScreenState extends State<HomeScreen> {
       label: 'Inventory',
     ),
     NavigationDestination(
+      icon: Icon(Icons.factory_outlined),
+      selectedIcon: Icon(Icons.factory),
+      label: 'Production',
+    ),
+    NavigationDestination(
       icon: Icon(Icons.location_on_outlined),
       selectedIcon: Icon(Icons.location_on),
       label: 'Suppliers',
@@ -34,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Screens for each navigation destination
   static const List<Widget> _screens = [
     InventoryListScreen(showAppBar: false),
+    ProductionScreen(),
     SuppliersScreen(),
   ];
 
