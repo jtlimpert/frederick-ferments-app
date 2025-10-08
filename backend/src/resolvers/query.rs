@@ -3,7 +3,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
-use crate::models::{InventoryItem, ProductionBatch, ProductionReminder, RecipeTemplate, Supplier};
+use crate::models::{InventoryItem, ProductionBatch, RecipeTemplate, Supplier};
 
 pub struct QueryRoot;
 
@@ -211,7 +211,7 @@ impl QueryRoot {
             SELECT
                 id, product_inventory_id, template_name, description,
                 default_batch_size, default_unit, estimated_duration_hours,
-                reminder_schedule, ingredient_template, instructions,
+                ingredient_template, instructions,
                 is_active as "is_active!", created_at, updated_at
             FROM recipe_templates
             WHERE is_active = true
@@ -238,7 +238,7 @@ impl QueryRoot {
             SELECT
                 id, product_inventory_id, template_name, description,
                 default_batch_size, default_unit, estimated_duration_hours,
-                reminder_schedule, ingredient_template, instructions,
+                ingredient_template, instructions,
                 is_active as "is_active!", created_at, updated_at
             FROM recipe_templates
             WHERE id = $1
@@ -249,52 +249,5 @@ impl QueryRoot {
         .await?;
 
         Ok(template)
-    }
-
-    /// Get all pending reminders for active batches
-    async fn pending_reminders(&self, ctx: &Context<'_>) -> Result<Vec<ProductionReminder>> {
-        let pool = ctx.data::<PgPool>()?;
-
-        let reminders = sqlx::query_as!(
-            ProductionReminder,
-            r#"
-            SELECT
-                id, batch_id, reminder_type, message, due_at,
-                completed_at, snoozed_until, notes, created_at
-            FROM production_reminders
-            WHERE completed_at IS NULL
-            ORDER BY due_at ASC
-            "#
-        )
-        .fetch_all(pool)
-        .await?;
-
-        Ok(reminders)
-    }
-
-    /// Get reminders for a specific batch
-    async fn batch_reminders(
-        &self,
-        ctx: &Context<'_>,
-        batch_id: uuid::Uuid,
-    ) -> Result<Vec<ProductionReminder>> {
-        let pool = ctx.data::<PgPool>()?;
-
-        let reminders = sqlx::query_as!(
-            ProductionReminder,
-            r#"
-            SELECT
-                id, batch_id, reminder_type, message, due_at,
-                completed_at, snoozed_until, notes, created_at
-            FROM production_reminders
-            WHERE batch_id = $1
-            ORDER BY due_at ASC
-            "#,
-            batch_id
-        )
-        .fetch_all(pool)
-        .await?;
-
-        Ok(reminders)
     }
 }

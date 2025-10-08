@@ -99,7 +99,7 @@ final class GraphqlServiceProvider
   }
 }
 
-String _$graphqlServiceHash() => r'1df2a68b4ba6493b6653dae8513e8a486aba3223';
+String _$graphqlServiceHash() => r'23872dc59ecd96512ef705fa04ac4022756f4d4b';
 
 /// Service for interacting with the Frederick Ferments GraphQL API.
 ///
@@ -361,49 +361,3 @@ final class RecipeTemplatesProvider
 }
 
 String _$recipeTemplatesHash() => r'0e50e49c4655944f9562b77cead69bc655af83e7';
-
-/// Riverpod provider for pending reminders.
-
-@ProviderFor(pendingReminders)
-const pendingRemindersProvider = PendingRemindersProvider._();
-
-/// Riverpod provider for pending reminders.
-
-final class PendingRemindersProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<ProductionReminder>>,
-          List<ProductionReminder>,
-          FutureOr<List<ProductionReminder>>
-        >
-    with
-        $FutureModifier<List<ProductionReminder>>,
-        $FutureProvider<List<ProductionReminder>> {
-  /// Riverpod provider for pending reminders.
-  const PendingRemindersProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'pendingRemindersProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$pendingRemindersHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<List<ProductionReminder>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<ProductionReminder>> create(Ref ref) {
-    return pendingReminders(ref);
-  }
-}
-
-String _$pendingRemindersHash() => r'94b4d28313f41287dda47dbab7f6fc8f41fa4608';

@@ -57,7 +57,7 @@ pub struct IngredientInput {
 pub struct CreateProductionBatchInput {
     /// ID of the product being created
     pub product_inventory_id: Uuid,
-    /// Optional recipe template ID for auto-generating reminders (Phase 2)
+    /// Optional recipe template ID
     pub recipe_template_id: Option<Uuid>,
     /// Quantity of product expected to be created
     pub batch_size: BigDecimal,
@@ -109,7 +109,7 @@ pub struct ProductionBatchResult {
 /// Represents a recipe template for repeatable production processes.
 ///
 /// Recipe templates define the standard process for making a product,
-/// including ingredient ratios and time-based reminders for each step.
+/// including ingredient ratios.
 #[derive(Debug, Clone, FromRow, SimpleObject, Serialize, Deserialize)]
 pub struct RecipeTemplate {
     pub id: Uuid,
@@ -119,9 +119,6 @@ pub struct RecipeTemplate {
     pub default_batch_size: Option<BigDecimal>,
     pub default_unit: Option<String>,
     pub estimated_duration_hours: Option<BigDecimal>,
-    /// JSONB field containing reminder schedule as array of objects
-    /// Example: [{"type": "fold", "message": "First fold", "after_hours": 2}]
-    pub reminder_schedule: Option<serde_json::Value>,
     /// JSONB field containing ingredient template as array of objects
     /// Example: [{"inventory_id": "uuid", "quantity_per_unit": 500, "unit": "g"}]
     pub ingredient_template: Option<serde_json::Value>,
@@ -129,48 +126,4 @@ pub struct RecipeTemplate {
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-}
-
-/// Represents a time-based reminder for a production batch.
-///
-/// Reminders are auto-created when a batch is started from a recipe template,
-/// and trigger at specific times relative to the batch start_date.
-#[derive(Debug, Clone, FromRow, SimpleObject, Serialize, Deserialize)]
-pub struct ProductionReminder {
-    pub id: Uuid,
-    pub batch_id: Uuid,
-    pub reminder_type: String,
-    pub message: String,
-    pub due_at: DateTime<Utc>,
-    pub completed_at: Option<DateTime<Utc>>,
-    pub snoozed_until: Option<DateTime<Utc>>,
-    pub notes: Option<String>,
-    pub created_at: DateTime<Utc>,
-}
-
-/// Input for snoozing a reminder.
-#[derive(Debug, InputObject)]
-pub struct SnoozeReminderInput {
-    /// ID of the reminder to snooze
-    pub reminder_id: Uuid,
-    /// New time to trigger the reminder
-    pub snooze_until: DateTime<Utc>,
-}
-
-/// Input for completing a reminder.
-#[derive(Debug, InputObject)]
-pub struct CompleteReminderInput {
-    /// ID of the reminder to mark as completed
-    pub reminder_id: Uuid,
-    /// Optional notes about completing this step
-    pub notes: Option<String>,
-}
-
-/// Result from a reminder operation.
-#[derive(Debug, SimpleObject)]
-pub struct ReminderResult {
-    /// Whether the operation succeeded
-    pub success: bool,
-    /// Result message
-    pub message: String,
 }

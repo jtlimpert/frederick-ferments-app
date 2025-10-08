@@ -110,3 +110,49 @@ class InventoryItem {
   /// Checks if stock is below reorder point.
   bool get needsReorder => availableStock <= reorderPoint;
 }
+
+/// Input for deleting an inventory item.
+class DeleteInventoryItemInput {
+  /// Creates delete inventory item input.
+  const DeleteInventoryItemInput({
+    required this.inventoryId,
+    this.reason,
+  });
+
+  /// ID of the inventory item to delete.
+  final String inventoryId;
+
+  /// Optional reason for deletion.
+  final String? reason;
+
+  /// Converts to JSON for GraphQL mutation.
+  Map<String, dynamic> toJson() {
+    return {
+      'inventoryId': inventoryId,
+      if (reason != null) 'reason': reason,
+    };
+  }
+}
+
+/// Result from deleting an inventory item.
+class DeleteResult {
+  /// Creates delete result.
+  const DeleteResult({
+    required this.success,
+    required this.message,
+  });
+
+  /// Creates result from GraphQL JSON response.
+  factory DeleteResult.fromJson(Map<String, dynamic> json) {
+    return DeleteResult(
+      success: json['success'] as bool,
+      message: json['message'] as String,
+    );
+  }
+
+  /// Whether the operation succeeded.
+  final bool success;
+
+  /// Result message (success or error details).
+  final String message;
+}

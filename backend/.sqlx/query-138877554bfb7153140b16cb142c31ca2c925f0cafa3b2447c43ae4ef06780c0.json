@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(*) as count\n            FROM production_batch_ingredients\n            JOIN production_batches ON production_batch_ingredients.batch_id = production_batches.id\n            WHERE production_batch_ingredients.ingredient_inventory_id = $1\n                AND production_batches.status = 'in_progress'\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "138877554bfb7153140b16cb142c31ca2c925f0cafa3b2447c43ae4ef06780c0"
+}

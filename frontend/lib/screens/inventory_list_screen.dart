@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/inventory_item.dart';
+import '../services/graphql_service.dart';
 import '../services/inventory_provider.dart';
 import '../widgets/inventory_item_card.dart';
 import 'create_purchase_screen.dart';
@@ -104,10 +106,87 @@ class InventoryListScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: items.length,
         itemBuilder: (context, index) {
-          return InventoryItemCard(item: items[index]);
+          final item = items[index] as InventoryItem;
+          return InventoryItemCard(
+            item: item,
+            onDelete: () => _showDeleteConfirmation(context, ref, item),
+          );
         },
       ),
     );
+  }
+
+  /// Shows a confirmation dialog before deleting an item.
+  void _showDeleteConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+    InventoryItem item,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Item'),
+        content: Text(
+          'Are you sure you want to delete "${item.name}"?\n\nThis action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteItem(context, ref, item);
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Deletes an inventory item.
+  Future<void> _deleteItem(
+    BuildContext context,
+    WidgetRef ref,
+    InventoryItem item,
+  ) async {
+    // Capture context values before async gap
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final errorColor = Theme.of(context).colorScheme.error;
+
+    try {
+      final service = ref.read(graphqlServiceProvider.notifier);
+      final result = await service.deleteInventoryItem(
+        DeleteInventoryItemInput(inventoryId: item.id),
+      );
+
+      if (result.success) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+        // Refresh the inventory list
+        ref.invalidate(inventoryItemsProvider);
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: errorColor,
+          ),
+        );
+      }
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error deleting item: $e'),
+          backgroundColor: errorColor,
+        ),
+      );
+    }
   }
 
   /// Builds the loading state with shimmer effect.

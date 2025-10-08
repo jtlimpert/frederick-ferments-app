@@ -57,7 +57,6 @@ CREATE TABLE recipe_templates (
     default_batch_size DECIMAL(10,3),
     default_unit VARCHAR(50),
     estimated_duration_hours DECIMAL(6,2),
-    reminder_schedule JSONB,
     ingredient_template JSONB,
     instructions TEXT,
     is_active BOOLEAN DEFAULT true,
@@ -98,19 +97,6 @@ CREATE TABLE production_batch_ingredients (
     notes TEXT
 );
 
--- Production reminders table
-CREATE TABLE production_reminders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    batch_id UUID NOT NULL REFERENCES production_batches(id) ON DELETE CASCADE,
-    reminder_type VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
-    due_at TIMESTAMPTZ NOT NULL,
-    completed_at TIMESTAMPTZ,
-    snoozed_until TIMESTAMPTZ,
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
 -- Create indexes for better performance
 CREATE INDEX idx_inventory_active ON inventory(is_active);
 CREATE INDEX idx_inventory_category ON inventory(category);
@@ -127,9 +113,6 @@ CREATE INDEX idx_production_batch_ingredients_batch ON production_batch_ingredie
 CREATE INDEX idx_production_batch_ingredients_ingredient ON production_batch_ingredients(ingredient_inventory_id);
 CREATE INDEX idx_recipe_templates_product ON recipe_templates(product_inventory_id);
 CREATE INDEX idx_recipe_templates_active ON recipe_templates(is_active) WHERE is_active = true;
-CREATE INDEX idx_reminders_batch ON production_reminders(batch_id);
-CREATE INDEX idx_reminders_due_pending ON production_reminders(due_at)
-    WHERE completed_at IS NULL;
 
 -- ============================================================================
 -- Sample Data Inserts
@@ -165,7 +148,6 @@ INSERT INTO recipe_templates (
   default_batch_size,
   default_unit,
   estimated_duration_hours,
-  reminder_schedule,
   ingredient_template
 )
 SELECT
@@ -175,15 +157,6 @@ SELECT
   2.0,
   'loaves',
   18.0,
-  '{
-    "reminders": [
-      {"type": "autolyse", "message": "Autolyse rest complete - add starter and salt", "after_minutes": 30},
-      {"type": "fold", "message": "First fold - stretch and fold the dough", "after_minutes": 60},
-      {"type": "fold", "message": "Second fold", "after_minutes": 90},
-      {"type": "shape", "message": "Bulk fermentation complete - shape loaves and cold proof", "after_hours": 4},
-      {"type": "bake", "message": "Preheat oven to 450°F and prepare to bake", "after_hours": 16}
-    ]
-  }'::jsonb,
   jsonb_build_object(
     'ingredients', jsonb_agg(
       jsonb_build_object(

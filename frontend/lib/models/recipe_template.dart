@@ -6,7 +6,6 @@ class RecipeTemplate {
   final double? defaultBatchSize;
   final String? defaultUnit;
   final double? estimatedDurationHours;
-  final Map<String, dynamic>? reminderSchedule;
   final Map<String, dynamic>? ingredientTemplate;
   final String? instructions;
   final bool isActive;
@@ -21,7 +20,6 @@ class RecipeTemplate {
     this.defaultBatchSize,
     this.defaultUnit,
     this.estimatedDurationHours,
-    this.reminderSchedule,
     this.ingredientTemplate,
     this.instructions,
     required this.isActive,
@@ -42,7 +40,6 @@ class RecipeTemplate {
       estimatedDurationHours: json['estimatedDurationHours'] != null
           ? double.parse(json['estimatedDurationHours'].toString())
           : null,
-      reminderSchedule: json['reminderSchedule'] as Map<String, dynamic>?,
       ingredientTemplate: json['ingredientTemplate'] as Map<String, dynamic>?,
       instructions: json['instructions'] as String?,
       isActive: json['isActive'] as bool,
@@ -60,7 +57,6 @@ class RecipeTemplate {
       'defaultBatchSize': defaultBatchSize,
       'defaultUnit': defaultUnit,
       'estimatedDurationHours': estimatedDurationHours,
-      'reminderSchedule': reminderSchedule,
       'ingredientTemplate': ingredientTemplate,
       'instructions': instructions,
       'isActive': isActive,

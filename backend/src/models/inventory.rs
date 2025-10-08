@@ -63,3 +63,15 @@ pub struct PurchaseResult {
     pub message: String,
     pub updated_items: Vec<InventoryItem>,
 }
+
+#[derive(Debug, InputObject)]
+pub struct DeleteInventoryItemInput {
+    pub inventory_id: Uuid,
+    pub reason: Option<String>, // Why it's being deleted (optional)
+}
+
+#[derive(Debug, SimpleObject)]
+pub struct DeleteResult {
+    pub success: bool,
+    pub message: String,
+}

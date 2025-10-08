@@ -9,10 +9,12 @@ import '../models/inventory_item.dart';
 class InventoryItemCard extends StatelessWidget {
   const InventoryItemCard({
     required this.item,
+    this.onDelete,
     super.key,
   });
 
   final InventoryItem item;
+  final VoidCallback? onDelete;
 
   /// Determines the stock status based on available stock vs reorder point.
   StockStatus get _stockStatus {
@@ -73,7 +75,7 @@ class InventoryItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Name and status icon
+            // Header: Name, status icon, and delete button
             Row(
               children: [
                 Expanded(
@@ -89,6 +91,16 @@ class InventoryItemCard extends StatelessWidget {
                   color: statusColor,
                   size: 28,
                 ),
+                if (onDelete != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: onDelete,
+                    tooltip: 'Delete item',
+                    iconSize: 24,
+                    color: theme.colorScheme.error,
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 8),

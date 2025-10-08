@@ -7,7 +7,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/inventory_item.dart';
 import '../models/production_batch.dart';
-import '../models/production_reminder.dart';
 import '../models/purchase.dart';
 import '../models/recipe_template.dart';
 import '../models/supplier.dart';
@@ -132,6 +131,15 @@ class GraphqlService extends _$GraphqlService {
           availableStock
           costPerUnit
         }
+      }
+    }
+  ''';
+
+  static const _deleteInventoryItemMutation = r'''
+    mutation DeleteInventoryItem($input: DeleteInventoryItemInput!) {
+      deleteInventoryItem(input: $input) {
+        success
+        message
       }
     }
   ''';
@@ -433,6 +441,46 @@ class GraphqlService extends _$GraphqlService {
     }
   }
 
+  /// Deletes an inventory item from the database.
+  ///
+  /// Throws an exception if the request fails or if the item is in use.
+  Future<DeleteResult> deleteInventoryItem(DeleteInventoryItemInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_deleteInventoryItemMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to delete inventory item',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final deleteData = result.data?['deleteInventoryItem'] as Map<String, dynamic>?;
+      if (deleteData == null) {
+        throw Exception('No data returned from deleteInventoryItem mutation');
+      }
+
+      return DeleteResult.fromJson(deleteData);
+    } catch (e, s) {
+      developer.log(
+        'Error in deleteInventoryItem',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
   /// Fetches all active production batches from the API.
   ///
   /// Returns batches with status 'in_progress'.
@@ -700,7 +748,6 @@ class GraphqlService extends _$GraphqlService {
           defaultBatchSize
           defaultUnit
           estimatedDurationHours
-          reminderSchedule
           ingredientTemplate
           instructions
           isActive
@@ -732,201 +779,6 @@ class GraphqlService extends _$GraphqlService {
     } catch (e, s) {
       developer.log(
         'Error in getRecipeTemplates',
-        name: 'graphql_service',
-        level: 1000,
-        error: e,
-        stackTrace: s,
-      );
-      rethrow;
-    }
-  }
-
-  /// Fetches all pending reminders from the API.
-  ///
-  /// Throws an exception if the request fails.
-  Future<List<ProductionReminder>> getPendingReminders() async {
-    const query = '''
-      query GetPendingReminders {
-        pendingReminders {
-          id
-          batchId
-          reminderType
-          message
-          dueAt
-          completedAt
-          snoozedUntil
-          notes
-          createdAt
-        }
-      }
-    ''';
-
-    try {
-      final result = await _client.query(
-        QueryOptions(document: gql(query)),
-      );
-
-      if (result.hasException) {
-        developer.log(
-          'Failed to fetch pending reminders',
-          name: 'graphql_service',
-          level: 1000,
-          error: result.exception,
-        );
-        throw Exception(result.exception.toString());
-      }
-
-      final reminders = result.data?['pendingReminders'] as List<dynamic>? ?? [];
-      return reminders
-          .map((reminder) => ProductionReminder.fromJson(reminder as Map<String, dynamic>))
-          .toList();
-    } catch (e, s) {
-      developer.log(
-        'Error in getPendingReminders',
-        name: 'graphql_service',
-        level: 1000,
-        error: e,
-        stackTrace: s,
-      );
-      rethrow;
-    }
-  }
-
-  /// Fetches reminders for a specific batch from the API.
-  ///
-  /// Throws an exception if the request fails.
-  Future<List<ProductionReminder>> getBatchReminders(String batchId) async {
-    const query = '''
-      query GetBatchReminders(\$batchId: UUID!) {
-        batchReminders(batchId: \$batchId) {
-          id
-          batchId
-          reminderType
-          message
-          dueAt
-          completedAt
-          snoozedUntil
-          notes
-          createdAt
-        }
-      }
-    ''';
-
-    try {
-      final result = await _client.query(
-        QueryOptions(
-          document: gql(query),
-          variables: {'batchId': batchId},
-        ),
-      );
-
-      if (result.hasException) {
-        developer.log(
-          'Failed to fetch batch reminders',
-          name: 'graphql_service',
-          level: 1000,
-          error: result.exception,
-        );
-        throw Exception(result.exception.toString());
-      }
-
-      final reminders = result.data?['batchReminders'] as List<dynamic>? ?? [];
-      return reminders
-          .map((reminder) => ProductionReminder.fromJson(reminder as Map<String, dynamic>))
-          .toList();
-    } catch (e, s) {
-      developer.log(
-        'Error in getBatchReminders',
-        name: 'graphql_service',
-        level: 1000,
-        error: e,
-        stackTrace: s,
-      );
-      rethrow;
-    }
-  }
-
-  /// Snoozes a reminder to a later time.
-  ///
-  /// Throws an exception if the request fails.
-  Future<ReminderResult> snoozeReminder(SnoozeReminderInput input) async {
-    const mutation = '''
-      mutation SnoozeReminder(\$input: SnoozeReminderInput!) {
-        snoozeReminder(input: \$input) {
-          success
-          message
-        }
-      }
-    ''';
-
-    try {
-      final result = await _client.mutate(
-        MutationOptions(
-          document: gql(mutation),
-          variables: {'input': input.toJson()},
-        ),
-      );
-
-      if (result.hasException) {
-        developer.log(
-          'Failed to snooze reminder',
-          name: 'graphql_service',
-          level: 1000,
-          error: result.exception,
-        );
-        throw Exception(result.exception.toString());
-      }
-
-      final data = result.data?['snoozeReminder'] as Map<String, dynamic>;
-      return ReminderResult.fromJson(data);
-    } catch (e, s) {
-      developer.log(
-        'Error in snoozeReminder',
-        name: 'graphql_service',
-        level: 1000,
-        error: e,
-        stackTrace: s,
-      );
-      rethrow;
-    }
-  }
-
-  /// Completes a reminder.
-  ///
-  /// Throws an exception if the request fails.
-  Future<ReminderResult> completeReminder(CompleteReminderInput input) async {
-    const mutation = '''
-      mutation CompleteReminder(\$input: CompleteReminderInput!) {
-        completeReminder(input: \$input) {
-          success
-          message
-        }
-      }
-    ''';
-
-    try {
-      final result = await _client.mutate(
-        MutationOptions(
-          document: gql(mutation),
-          variables: {'input': input.toJson()},
-        ),
-      );
-
-      if (result.hasException) {
-        developer.log(
-          'Failed to complete reminder',
-          name: 'graphql_service',
-          level: 1000,
-          error: result.exception,
-        );
-        throw Exception(result.exception.toString());
-      }
-
-      final data = result.data?['completeReminder'] as Map<String, dynamic>;
-      return ReminderResult.fromJson(data);
-    } catch (e, s) {
-      developer.log(
-        'Error in completeReminder',
         name: 'graphql_service',
         level: 1000,
         error: e,
@@ -971,11 +823,4 @@ Future<List<InventoryItem>> finishedProducts(Ref ref) async {
 Future<List<RecipeTemplate>> recipeTemplates(Ref ref) async {
   final service = ref.watch(graphqlServiceProvider.notifier);
   return service.getRecipeTemplates();
-}
-
-/// Riverpod provider for pending reminders.
-@riverpod
-Future<List<ProductionReminder>> pendingReminders(Ref ref) async {
-  final service = ref.watch(graphqlServiceProvider.notifier);
-  return service.getPendingReminders();
 }

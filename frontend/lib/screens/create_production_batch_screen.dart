@@ -127,7 +127,6 @@ class _CreateProductionBatchScreenState
                           initialValue: _selectedRecipe,
                           decoration: const InputDecoration(
                             labelText: 'Recipe Template (Optional)',
-                            helperText: 'Select a recipe to auto-create reminders',
                             border: OutlineInputBorder(),
                           ),
                           items: [
@@ -395,7 +394,6 @@ class _CreateProductionBatchScreenState
       if (result.success && mounted) {
         // Invalidate providers to refresh data
         ref.invalidate(activeBatchesProvider);
-        ref.invalidate(pendingRemindersProvider);
         ref.invalidate(inventoryItemsProvider);
         ref.invalidate(productionHistoryProvider);
 

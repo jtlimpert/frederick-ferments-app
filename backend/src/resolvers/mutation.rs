@@ -4,9 +4,9 @@ use chrono::Utc;
 use sqlx::PgPool;
 
 use crate::models::{
-    CompleteProductionBatchInput, CompleteReminderInput, CreateProductionBatchInput,
-    CreatePurchaseInput, FailProductionBatchInput, InventoryItem, ProductionBatchResult,
-    PurchaseResult, ReminderResult, SnoozeReminderInput,
+    CompleteProductionBatchInput, CreateProductionBatchInput, CreatePurchaseInput,
+    DeleteInventoryItemInput, DeleteResult, FailProductionBatchInput, InventoryItem,
+    ProductionBatchResult, PurchaseResult,
 };
 
 pub struct MutationRoot;
@@ -292,70 +292,7 @@ impl MutationRoot {
             .await?;
         }
 
-        // 6. Auto-create reminders from recipe template if provided
-        if let Some(template_id) = input.recipe_template_id {
-            // Fetch the recipe template
-            let template = sqlx::query!(
-                "SELECT reminder_schedule FROM recipe_templates WHERE id = $1",
-                template_id
-            )
-            .fetch_optional(&mut *tx)
-            .await?;
-
-            if let Some(template) = template
-                && let Some(schedule) = template.reminder_schedule
-            {
-                // Parse reminder schedule JSON - extract "reminders" array
-                let reminders_array = schedule
-                    .get("reminders")
-                    .and_then(|v| v.as_array())
-                    .cloned()
-                    .unwrap_or_default();
-
-                for reminder in reminders_array {
-                    // Extract reminder fields
-                    let reminder_type = reminder
-                        .get("type")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("task");
-                    let message = reminder
-                        .get("message")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("Reminder");
-
-                    // Calculate reminder time from batch start_date
-                    let mut due_at = today;
-
-                    if let Some(minutes) = reminder.get("after_minutes").and_then(|v| v.as_i64()) {
-                        due_at += chrono::Duration::minutes(minutes);
-                    }
-                    if let Some(hours) = reminder.get("after_hours").and_then(|v| v.as_i64()) {
-                        due_at += chrono::Duration::hours(hours);
-                    }
-                    if let Some(days) = reminder.get("after_days").and_then(|v| v.as_i64()) {
-                        due_at += chrono::Duration::days(days);
-                    }
-
-                    // Create production_reminder record
-                    sqlx::query!(
-                        r#"
-                        INSERT INTO production_reminders (
-                            batch_id, reminder_type, message, due_at, created_at
-                        ) VALUES ($1, $2, $3, $4, $5)
-                        "#,
-                        batch_id,
-                        reminder_type,
-                        message,
-                        due_at,
-                        today
-                    )
-                    .execute(&mut *tx)
-                    .await?;
-                }
-            }
-        }
-
-        // 7. Commit transaction (product will be added when batch is completed)
+        // 6. Commit transaction (product will be added when batch is completed)
         tx.commit().await?;
 
         Ok(ProductionBatchResult {
@@ -555,73 +492,71 @@ impl MutationRoot {
         })
     }
 
-    /// Snooze a reminder to a later time
-    async fn snooze_reminder(
+    /// Delete an inventory item (hard delete)
+    /// Use this for accidental additions or items that have gone completely bad
+    async fn delete_inventory_item(
         &self,
         ctx: &Context<'_>,
-        input: SnoozeReminderInput,
-    ) -> Result<ReminderResult> {
+        input: DeleteInventoryItemInput,
+    ) -> Result<DeleteResult> {
         let pool = ctx.data::<PgPool>()?;
 
-        // Update the reminder's snoozed_until field
-        let result = sqlx::query!(
-            r#"
-            UPDATE production_reminders
-            SET snoozed_until = $1
-            WHERE id = $2 AND completed_at IS NULL
-            "#,
-            input.snooze_until,
-            input.reminder_id
+        // Begin transaction
+        let mut tx = pool.begin().await?;
+
+        // Check if item exists and has no dependencies
+        let item = sqlx::query!(
+            "SELECT name FROM inventory WHERE id = $1",
+            input.inventory_id
         )
-        .execute(pool)
+        .fetch_optional(&mut *tx)
         .await?;
 
-        if result.rows_affected() == 0 {
-            return Ok(ReminderResult {
+        let item = match item {
+            Some(i) => i,
+            None => {
+                return Ok(DeleteResult {
+                    success: false,
+                    message: "Inventory item not found".to_string(),
+                });
+            }
+        };
+
+        // Check for active production batches using this item
+        let active_batches = sqlx::query!(
+            r#"
+            SELECT COUNT(*) as count
+            FROM production_batch_ingredients
+            JOIN production_batches ON production_batch_ingredients.batch_id = production_batches.id
+            WHERE production_batch_ingredients.ingredient_inventory_id = $1
+                AND production_batches.status = 'in_progress'
+            "#,
+            input.inventory_id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if active_batches.count.unwrap_or(0) > 0 {
+            return Ok(DeleteResult {
                 success: false,
-                message: "Reminder not found or already completed".to_string(),
+                message: format!(
+                    "Cannot delete '{}': item is used in active production batches",
+                    item.name
+                ),
             });
         }
 
-        Ok(ReminderResult {
+        // Delete the inventory item (cascading will handle related records)
+        sqlx::query!("DELETE FROM inventory WHERE id = $1", input.inventory_id)
+            .execute(&mut *tx)
+            .await?;
+
+        // Commit transaction
+        tx.commit().await?;
+
+        Ok(DeleteResult {
             success: true,
-            message: format!("Reminder snoozed until {}", input.snooze_until),
-        })
-    }
-
-    /// Mark a reminder as completed
-    async fn complete_reminder(
-        &self,
-        ctx: &Context<'_>,
-        input: CompleteReminderInput,
-    ) -> Result<ReminderResult> {
-        let pool = ctx.data::<PgPool>()?;
-        let now = Utc::now();
-
-        // Update the reminder as completed
-        let result = sqlx::query!(
-            r#"
-            UPDATE production_reminders
-            SET completed_at = $1, notes = $2
-            WHERE id = $3 AND completed_at IS NULL
-            "#,
-            now,
-            input.notes,
-            input.reminder_id
-        )
-        .execute(pool)
-        .await?;
-
-        if result.rows_affected() == 0 {
-            return Ok(ReminderResult {
-                success: false,
-                message: "Reminder not found or already completed".to_string(),
-            });
-        }
-
-        Ok(ReminderResult {
-            success: true,
-            message: "Reminder marked as completed".to_string(),
+            message: format!("Successfully deleted '{}'", item.name),
         })
     }
 }

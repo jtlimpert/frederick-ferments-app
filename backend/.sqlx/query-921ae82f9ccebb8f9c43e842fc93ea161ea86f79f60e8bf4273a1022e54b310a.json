@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                id, product_inventory_id, template_name, description,\n                default_batch_size, default_unit, estimated_duration_hours,\n                reminder_schedule, ingredient_template, instructions,\n                is_active as \"is_active!\", created_at, updated_at\n            FROM recipe_templates\n            WHERE id = $1\n            ",
+  "query": "\n            SELECT\n                id, product_inventory_id, template_name, description,\n                default_batch_size, default_unit, estimated_duration_hours,\n                ingredient_template, instructions,\n                is_active as \"is_active!\", created_at, updated_at\n            FROM recipe_templates\n            WHERE is_active = true\n            ORDER BY template_name\n            ",
   "describe": {
     "columns": [
       {
@@ -40,39 +40,32 @@
       },
       {
         "ordinal": 7,
-        "name": "reminder_schedule",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 8,
         "name": "ingredient_template",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "instructions",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "is_active!",
         "type_info": "Bool"
       },
       {
-        "ordinal": 11,
+        "ordinal": 10,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -85,10 +78,9 @@
       true,
       true,
       true,
-      true,
       false,
       false
     ]
   },
-  "hash": "8c5aaa788d60c8dd56094ee9a834a062837eb4fc0bb8a9e0869ee1246720ee85"
+  "hash": "921ae82f9ccebb8f9c43e842fc93ea161ea86f79f60e8bf4273a1022e54b310a"
 }
