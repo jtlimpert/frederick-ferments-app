@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE suppliers\n            SET\n                name = COALESCE($2, name),\n                contact_email = COALESCE($3, contact_email),\n                contact_phone = COALESCE($4, contact_phone),\n                address = COALESCE($5, address),\n                latitude = COALESCE($6, latitude),\n                longitude = COALESCE($7, longitude),\n                notes = COALESCE($8, notes),\n                updated_at = $9\n            WHERE id = $1\n            RETURNING\n                id,\n                name,\n                contact_email,\n                contact_phone,\n                address,\n                latitude as \"latitude?: BigDecimal\",\n                longitude as \"longitude?: BigDecimal\",\n                notes,\n                created_at,\n                updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "contact_email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "contact_phone",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "address",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "latitude?: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "longitude?: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Numeric",
+        "Numeric",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4ea741a5a3a8fe8c8b25a8e7e0766ec7f464eeed248e67d4f2d266bc1880b247"
+}

@@ -5,9 +5,9 @@ use sqlx::PgPool;
 
 use crate::models::{
     CompleteProductionBatchInput, CreateInventoryItemInput, CreateProductionBatchInput,
-    CreatePurchaseInput, DeleteInventoryItemInput, DeleteResult, FailProductionBatchInput,
-    InventoryItem, InventoryItemResult, ProductionBatchResult, PurchaseResult,
-    UpdateInventoryItemInput,
+    CreatePurchaseInput, CreateSupplierInput, DeleteInventoryItemInput, DeleteResult,
+    FailProductionBatchInput, InventoryItem, InventoryItemResult, ProductionBatchResult,
+    PurchaseResult, Supplier, SupplierResult, UpdateInventoryItemInput, UpdateSupplierInput,
 };
 
 pub struct MutationRoot;
@@ -773,6 +773,160 @@ impl MutationRoot {
         Ok(DeleteResult {
             success: true,
             message: format!("Successfully deleted '{}'", item.name),
+        })
+    }
+
+    /// Create a new supplier
+    async fn create_supplier(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateSupplierInput,
+    ) -> Result<SupplierResult> {
+        let pool = ctx.data::<PgPool>()?;
+
+        // Check if name already exists
+        let existing = sqlx::query!("SELECT id FROM suppliers WHERE name = $1", input.name)
+            .fetch_optional(pool)
+            .await?;
+
+        if existing.is_some() {
+            return Ok(SupplierResult {
+                success: false,
+                message: format!("A supplier with the name '{}' already exists", input.name),
+                supplier: None,
+            });
+        }
+
+        let now = Utc::now();
+
+        // Create the supplier
+        let supplier = sqlx::query_as!(
+            Supplier,
+            r#"
+            INSERT INTO suppliers (
+                name, contact_email, contact_phone, address,
+                latitude, longitude, notes, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+            RETURNING
+                id,
+                name,
+                contact_email,
+                contact_phone,
+                address,
+                latitude as "latitude?: BigDecimal",
+                longitude as "longitude?: BigDecimal",
+                notes,
+                created_at,
+                updated_at
+            "#,
+            input.name,
+            input.contact_email,
+            input.contact_phone,
+            input.address,
+            input.latitude,
+            input.longitude,
+            input.notes,
+            now
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(SupplierResult {
+            success: true,
+            message: format!("Successfully created '{}'", supplier.name),
+            supplier: Some(supplier),
+        })
+    }
+
+    /// Update an existing supplier
+    async fn update_supplier(
+        &self,
+        ctx: &Context<'_>,
+        input: UpdateSupplierInput,
+    ) -> Result<SupplierResult> {
+        let pool = ctx.data::<PgPool>()?;
+        let mut tx = pool.begin().await?;
+
+        // Check if supplier exists
+        let existing = sqlx::query!("SELECT name FROM suppliers WHERE id = $1", input.id)
+            .fetch_optional(&mut *tx)
+            .await?;
+
+        if existing.is_none() {
+            return Ok(SupplierResult {
+                success: false,
+                message: "Supplier not found".to_string(),
+                supplier: None,
+            });
+        }
+
+        // Check if new name conflicts with existing suppliers (if name is being changed)
+        if let Some(ref new_name) = input.name {
+            let name_conflict = sqlx::query!(
+                "SELECT id FROM suppliers WHERE name = $1 AND id != $2",
+                new_name,
+                input.id
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
+
+            if name_conflict.is_some() {
+                return Ok(SupplierResult {
+                    success: false,
+                    message: format!("A supplier with the name '{}' already exists", new_name),
+                    supplier: None,
+                });
+            }
+        }
+
+        let now = Utc::now();
+
+        // Build update query dynamically based on provided fields
+        let supplier = sqlx::query_as!(
+            Supplier,
+            r#"
+            UPDATE suppliers
+            SET
+                name = COALESCE($2, name),
+                contact_email = COALESCE($3, contact_email),
+                contact_phone = COALESCE($4, contact_phone),
+                address = COALESCE($5, address),
+                latitude = COALESCE($6, latitude),
+                longitude = COALESCE($7, longitude),
+                notes = COALESCE($8, notes),
+                updated_at = $9
+            WHERE id = $1
+            RETURNING
+                id,
+                name,
+                contact_email,
+                contact_phone,
+                address,
+                latitude as "latitude?: BigDecimal",
+                longitude as "longitude?: BigDecimal",
+                notes,
+                created_at,
+                updated_at
+            "#,
+            input.id,
+            input.name,
+            input.contact_email,
+            input.contact_phone,
+            input.address,
+            input.latitude,
+            input.longitude,
+            input.notes,
+            now
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(SupplierResult {
+            success: true,
+            message: format!("Successfully updated '{}'", supplier.name),
+            supplier: Some(supplier),
         })
     }
 }

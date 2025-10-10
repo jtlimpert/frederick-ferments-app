@@ -196,6 +196,48 @@ class GraphqlService extends _$GraphqlService {
     }
   ''';
 
+  static const _createSupplierMutation = r'''
+    mutation CreateSupplier($input: CreateSupplierInput!) {
+      createSupplier(input: $input) {
+        success
+        message
+        supplier {
+          id
+          name
+          contactEmail
+          contactPhone
+          address
+          latitude
+          longitude
+          notes
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  ''';
+
+  static const _updateSupplierMutation = r'''
+    mutation UpdateSupplier($input: UpdateSupplierInput!) {
+      updateSupplier(input: $input) {
+        success
+        message
+        supplier {
+          id
+          name
+          contactEmail
+          contactPhone
+          address
+          latitude
+          longitude
+          notes
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  ''';
+
   /// GraphQL query to fetch active production batches.
   static const _activeBatchesQuery = r'''
     query GetActiveBatches {
@@ -606,6 +648,88 @@ class GraphqlService extends _$GraphqlService {
     } catch (e, s) {
       developer.log(
         'Error in deleteInventoryItem',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Creates a new supplier.
+  ///
+  /// Returns a [SupplierResult] with the created supplier.
+  /// Throws an exception if the request fails.
+  Future<SupplierResult> createSupplier(CreateSupplierInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_createSupplierMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to create supplier',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final supplierData = result.data?['createSupplier'] as Map<String, dynamic>?;
+      if (supplierData == null) {
+        throw Exception('No data returned from createSupplier mutation');
+      }
+
+      return SupplierResult.fromJson(supplierData);
+    } catch (e, s) {
+      developer.log(
+        'Error in createSupplier',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Updates an existing supplier.
+  ///
+  /// Returns a [SupplierResult] with the updated supplier.
+  /// Throws an exception if the request fails.
+  Future<SupplierResult> updateSupplier(UpdateSupplierInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_updateSupplierMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to update supplier',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final supplierData = result.data?['updateSupplier'] as Map<String, dynamic>?;
+      if (supplierData == null) {
+        throw Exception('No data returned from updateSupplier mutation');
+      }
+
+      return SupplierResult.fromJson(supplierData);
+    } catch (e, s) {
+      developer.log(
+        'Error in updateSupplier',
         name: 'graphql_service',
         level: 1000,
         error: e,

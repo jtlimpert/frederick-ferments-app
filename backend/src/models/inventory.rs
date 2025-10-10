@@ -112,3 +112,33 @@ pub struct InventoryItemResult {
     pub message: String,
     pub item: Option<InventoryItem>,
 }
+
+#[derive(Debug, InputObject)]
+pub struct CreateSupplierInput {
+    pub name: String,
+    pub contact_email: Option<String>,
+    pub contact_phone: Option<String>,
+    pub address: Option<String>,
+    pub latitude: Option<BigDecimal>,
+    pub longitude: Option<BigDecimal>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, InputObject)]
+pub struct UpdateSupplierInput {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub contact_email: Option<String>,
+    pub contact_phone: Option<String>,
+    pub address: Option<String>,
+    pub latitude: Option<BigDecimal>,
+    pub longitude: Option<BigDecimal>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, SimpleObject)]
+pub struct SupplierResult {
+    pub success: bool,
+    pub message: String,
+    pub supplier: Option<Supplier>,
+}

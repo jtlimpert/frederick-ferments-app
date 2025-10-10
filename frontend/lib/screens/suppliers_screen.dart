@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/supplier.dart';
 import '../services/suppliers_provider.dart';
+import 'supplier_form_screen.dart';
 
 /// Screen displaying suppliers with map and list views.
 ///
@@ -64,10 +66,21 @@ class SuppliersScreen extends ConsumerWidget {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const SupplierFormScreen(),
+            ),
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('New Supplier'),
+      ),
     );
   }
 
-  Widget _buildSuppliersList(BuildContext context, List<dynamic> suppliers) {
+  Widget _buildSuppliersList(BuildContext context, List<Supplier> suppliers) {
     if (suppliers.isEmpty) {
       return const Center(
         child: Column(
@@ -122,6 +135,17 @@ class SuppliersScreen extends ConsumerWidget {
                   ),
                 ],
               ],
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => SupplierFormScreen(supplier: supplier),
+                  ),
+                );
+              },
+              tooltip: 'Edit supplier',
             ),
             isThreeLine: true,
           ),

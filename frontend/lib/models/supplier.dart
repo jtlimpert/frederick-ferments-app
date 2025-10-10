@@ -81,3 +81,101 @@ class Supplier {
   /// Whether this supplier has valid coordinates for map display.
   bool get hasCoordinates => latitude != null && longitude != null;
 }
+
+/// Input for creating a new supplier.
+class CreateSupplierInput {
+  /// Creates a supplier input.
+  const CreateSupplierInput({
+    required this.name,
+    this.contactEmail,
+    this.contactPhone,
+    this.address,
+    this.latitude,
+    this.longitude,
+    this.notes,
+  });
+
+  /// Converts to GraphQL mutation variables format.
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      if (contactEmail != null) 'contactEmail': contactEmail,
+      if (contactPhone != null) 'contactPhone': contactPhone,
+      if (address != null) 'address': address,
+      if (latitude != null) 'latitude': latitude.toString(),
+      if (longitude != null) 'longitude': longitude.toString(),
+      if (notes != null) 'notes': notes,
+    };
+  }
+
+  final String name;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
+  final String? notes;
+}
+
+/// Input for updating an existing supplier.
+class UpdateSupplierInput {
+  /// Creates an update supplier input.
+  const UpdateSupplierInput({
+    required this.id,
+    this.name,
+    this.contactEmail,
+    this.contactPhone,
+    this.address,
+    this.latitude,
+    this.longitude,
+    this.notes,
+  });
+
+  /// Converts to GraphQL mutation variables format.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      if (name != null) 'name': name,
+      if (contactEmail != null) 'contactEmail': contactEmail,
+      if (contactPhone != null) 'contactPhone': contactPhone,
+      if (address != null) 'address': address,
+      if (latitude != null) 'latitude': latitude.toString(),
+      if (longitude != null) 'longitude': longitude.toString(),
+      if (notes != null) 'notes': notes,
+    };
+  }
+
+  final String id;
+  final String? name;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
+  final String? notes;
+}
+
+/// Result from create/update supplier mutations.
+class SupplierResult {
+  /// Creates a supplier result.
+  const SupplierResult({
+    required this.success,
+    required this.message,
+    this.supplier,
+  });
+
+  /// Creates a result from GraphQL JSON response.
+  factory SupplierResult.fromJson(Map<String, dynamic> json) {
+    return SupplierResult(
+      success: json['success'] as bool,
+      message: json['message'] as String,
+      supplier: json['supplier'] != null
+          ? Supplier.fromJson(json['supplier'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  final bool success;
+  final String message;
+  final Supplier? supplier;
+}
