@@ -367,6 +367,61 @@ class GraphqlService extends _$GraphqlService {
     }
   ''';
 
+  static const _createRecipeTemplateMutation = r'''
+    mutation CreateRecipeTemplate($input: CreateRecipeTemplateInput!) {
+      createRecipeTemplate(input: $input) {
+        success
+        message
+        recipe {
+          id
+          productInventoryId
+          templateName
+          description
+          defaultBatchSize
+          defaultUnit
+          estimatedDurationHours
+          ingredientTemplate
+          instructions
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  ''';
+
+  static const _updateRecipeTemplateMutation = r'''
+    mutation UpdateRecipeTemplate($input: UpdateRecipeTemplateInput!) {
+      updateRecipeTemplate(input: $input) {
+        success
+        message
+        recipe {
+          id
+          productInventoryId
+          templateName
+          description
+          defaultBatchSize
+          defaultUnit
+          estimatedDurationHours
+          ingredientTemplate
+          instructions
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  ''';
+
+  static const _deleteRecipeTemplateMutation = r'''
+    mutation DeleteRecipeTemplate($input: DeleteRecipeTemplateInput!) {
+      deleteRecipeTemplate(input: $input) {
+        success
+        message
+      }
+    }
+  ''';
+
   /// Fetches all active inventory items from the API.
   ///
   /// Throws an exception if the request fails.
@@ -742,6 +797,133 @@ class GraphqlService extends _$GraphqlService {
     } catch (e, s) {
       developer.log(
         'Error in updateSupplier',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Creates a new recipe template.
+  ///
+  /// Throws an exception if the request fails.
+  Future<RecipeTemplateResult> createRecipeTemplate(
+      CreateRecipeTemplateInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_createRecipeTemplateMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to create recipe template',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final recipeData =
+          result.data?['createRecipeTemplate'] as Map<String, dynamic>?;
+      if (recipeData == null) {
+        throw Exception('No data returned from createRecipeTemplate mutation');
+      }
+
+      return RecipeTemplateResult.fromJson(recipeData);
+    } catch (e, s) {
+      developer.log(
+        'Error in createRecipeTemplate',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Updates an existing recipe template.
+  ///
+  /// Throws an exception if the request fails.
+  Future<RecipeTemplateResult> updateRecipeTemplate(
+      UpdateRecipeTemplateInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_updateRecipeTemplateMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to update recipe template',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final recipeData =
+          result.data?['updateRecipeTemplate'] as Map<String, dynamic>?;
+      if (recipeData == null) {
+        throw Exception('No data returned from updateRecipeTemplate mutation');
+      }
+
+      return RecipeTemplateResult.fromJson(recipeData);
+    } catch (e, s) {
+      developer.log(
+        'Error in updateRecipeTemplate',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Deletes a recipe template (soft delete).
+  ///
+  /// Throws an exception if the request fails.
+  Future<DeleteResult> deleteRecipeTemplate(String id) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_deleteRecipeTemplateMutation),
+          variables: {
+            'input': {'id': id}
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to delete recipe template',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final deleteData =
+          result.data?['deleteRecipeTemplate'] as Map<String, dynamic>?;
+      if (deleteData == null) {
+        throw Exception('No data returned from deleteRecipeTemplate mutation');
+      }
+
+      return DeleteResult.fromJson(deleteData);
+    } catch (e, s) {
+      developer.log(
+        'Error in deleteRecipeTemplate',
         name: 'graphql_service',
         level: 1000,
         error: e,

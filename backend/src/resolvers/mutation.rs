@@ -5,9 +5,11 @@ use sqlx::PgPool;
 
 use crate::models::{
     CompleteProductionBatchInput, CreateInventoryItemInput, CreateProductionBatchInput,
-    CreatePurchaseInput, CreateSupplierInput, DeleteInventoryItemInput, DeleteResult,
-    FailProductionBatchInput, InventoryItem, InventoryItemResult, ProductionBatchResult,
-    PurchaseResult, Supplier, SupplierResult, UpdateInventoryItemInput, UpdateSupplierInput,
+    CreatePurchaseInput, CreateRecipeTemplateInput, CreateSupplierInput, DeleteInventoryItemInput,
+    DeleteRecipeTemplateInput, DeleteResult, FailProductionBatchInput, InventoryItem,
+    InventoryItemResult, ProductionBatchResult, PurchaseResult, RecipeTemplate,
+    RecipeTemplateResult, Supplier, SupplierResult, UpdateInventoryItemInput,
+    UpdateRecipeTemplateInput, UpdateSupplierInput,
 };
 
 pub struct MutationRoot;
@@ -947,6 +949,218 @@ impl MutationRoot {
             success: true,
             message: format!("Successfully updated '{}'", supplier.name),
             supplier: Some(supplier),
+        })
+    }
+
+    /// Create a new recipe template
+    async fn create_recipe_template(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateRecipeTemplateInput,
+    ) -> Result<RecipeTemplateResult> {
+        let pool = ctx.data::<PgPool>()?;
+        let mut tx = pool.begin().await?;
+
+        // Validate product exists and is active
+        let product = sqlx::query!(
+            r#"SELECT id, name FROM inventory WHERE id = $1 AND is_active = true"#,
+            input.product_inventory_id
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        if product.is_none() {
+            return Ok(RecipeTemplateResult {
+                success: false,
+                message: "Product not found or is inactive".to_string(),
+                recipe: None,
+            });
+        }
+
+        // Insert new recipe template
+        let recipe = sqlx::query_as!(
+            RecipeTemplate,
+            r#"
+            INSERT INTO recipe_templates (
+                product_inventory_id, template_name, description,
+                default_batch_size, default_unit, estimated_duration_hours,
+                ingredient_template, instructions, is_active
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+            RETURNING
+                id, product_inventory_id, template_name, description,
+                default_batch_size, default_unit, estimated_duration_hours,
+                ingredient_template, instructions,
+                is_active as "is_active!", created_at, updated_at
+            "#,
+            input.product_inventory_id,
+            input.template_name,
+            input.description,
+            input.default_batch_size,
+            input.default_unit,
+            input.estimated_duration_hours,
+            input.ingredient_template,
+            input.instructions
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(RecipeTemplateResult {
+            success: true,
+            message: format!("Successfully created recipe '{}'", recipe.template_name),
+            recipe: Some(recipe),
+        })
+    }
+
+    /// Update an existing recipe template
+    async fn update_recipe_template(
+        &self,
+        ctx: &Context<'_>,
+        input: UpdateRecipeTemplateInput,
+    ) -> Result<RecipeTemplateResult> {
+        let pool = ctx.data::<PgPool>()?;
+        let mut tx = pool.begin().await?;
+
+        // Check if recipe exists
+        let existing = sqlx::query!(r#"SELECT id FROM recipe_templates WHERE id = $1"#, input.id)
+            .fetch_optional(&mut *tx)
+            .await?;
+
+        if existing.is_none() {
+            return Ok(RecipeTemplateResult {
+                success: false,
+                message: "Recipe template not found".to_string(),
+                recipe: None,
+            });
+        }
+
+        // If updating product, validate it exists and is active
+        if let Some(product_id) = input.product_inventory_id {
+            let product = sqlx::query!(
+                r#"SELECT id FROM inventory WHERE id = $1 AND is_active = true"#,
+                product_id
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
+
+            if product.is_none() {
+                return Ok(RecipeTemplateResult {
+                    success: false,
+                    message: "Product not found or is inactive".to_string(),
+                    recipe: None,
+                });
+            }
+        }
+
+        let now = Utc::now();
+
+        // Update recipe template
+        let recipe = sqlx::query_as!(
+            RecipeTemplate,
+            r#"
+            UPDATE recipe_templates
+            SET
+                product_inventory_id = COALESCE($2, product_inventory_id),
+                template_name = COALESCE($3, template_name),
+                description = COALESCE($4, description),
+                default_batch_size = COALESCE($5, default_batch_size),
+                default_unit = COALESCE($6, default_unit),
+                estimated_duration_hours = COALESCE($7, estimated_duration_hours),
+                ingredient_template = COALESCE($8, ingredient_template),
+                instructions = COALESCE($9, instructions),
+                updated_at = $10
+            WHERE id = $1
+            RETURNING
+                id, product_inventory_id, template_name, description,
+                default_batch_size, default_unit, estimated_duration_hours,
+                ingredient_template, instructions,
+                is_active as "is_active!", created_at, updated_at
+            "#,
+            input.id,
+            input.product_inventory_id,
+            input.template_name,
+            input.description,
+            input.default_batch_size,
+            input.default_unit,
+            input.estimated_duration_hours,
+            input.ingredient_template,
+            input.instructions,
+            now
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(RecipeTemplateResult {
+            success: true,
+            message: format!("Successfully updated recipe '{}'", recipe.template_name),
+            recipe: Some(recipe),
+        })
+    }
+
+    /// Delete a recipe template (soft delete by setting is_active to false)
+    async fn delete_recipe_template(
+        &self,
+        ctx: &Context<'_>,
+        input: DeleteRecipeTemplateInput,
+    ) -> Result<DeleteResult> {
+        let pool = ctx.data::<PgPool>()?;
+        let mut tx = pool.begin().await?;
+
+        // Check if recipe exists
+        let existing = sqlx::query!(
+            r#"SELECT template_name FROM recipe_templates WHERE id = $1"#,
+            input.id
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        let Some(recipe) = existing else {
+            return Ok(DeleteResult {
+                success: false,
+                message: "Recipe template not found".to_string(),
+            });
+        };
+
+        // Check if any active production batches reference this recipe
+        let active_batches = sqlx::query!(
+            r#"
+            SELECT COUNT(*) as count
+            FROM production_batches
+            WHERE recipe_template_id = $1 AND status = 'in_progress'
+            "#,
+            input.id
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        if active_batches.count.unwrap_or(0) > 0 {
+            return Ok(DeleteResult {
+                success: false,
+                message: format!(
+                    "Cannot delete recipe '{}': {} active production batch(es) reference it",
+                    recipe.template_name,
+                    active_batches.count.unwrap_or(0)
+                ),
+            });
+        }
+
+        // Soft delete by setting is_active to false
+        sqlx::query!(
+            r#"UPDATE recipe_templates SET is_active = false WHERE id = $1"#,
+            input.id
+        )
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(DeleteResult {
+            success: true,
+            message: format!("Successfully deleted recipe '{}'", recipe.template_name),
         })
     }
 }

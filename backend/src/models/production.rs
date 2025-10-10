@@ -127,3 +127,66 @@ pub struct RecipeTemplate {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+/// Input for creating a new recipe template.
+#[derive(Debug, InputObject)]
+pub struct CreateRecipeTemplateInput {
+    /// ID of the product this recipe creates
+    pub product_inventory_id: Uuid,
+    /// Name of the recipe template
+    pub template_name: String,
+    /// Optional description of the recipe
+    pub description: Option<String>,
+    /// Default batch size for this recipe
+    pub default_batch_size: Option<BigDecimal>,
+    /// Unit of measurement for the default batch size
+    pub default_unit: Option<String>,
+    /// Estimated time to complete in hours
+    pub estimated_duration_hours: Option<BigDecimal>,
+    /// JSONB ingredient template structure
+    /// Format: {"ingredients": [{"inventory_id": "uuid", "quantity_per_batch": 0.5, "unit": "kg"}]}
+    pub ingredient_template: Option<serde_json::Value>,
+    /// Step-by-step instructions
+    pub instructions: Option<String>,
+}
+
+/// Input for updating an existing recipe template.
+#[derive(Debug, InputObject)]
+pub struct UpdateRecipeTemplateInput {
+    /// ID of the recipe template to update
+    pub id: Uuid,
+    /// Optional new product ID
+    pub product_inventory_id: Option<Uuid>,
+    /// Optional new template name
+    pub template_name: Option<String>,
+    /// Optional new description
+    pub description: Option<String>,
+    /// Optional new default batch size
+    pub default_batch_size: Option<BigDecimal>,
+    /// Optional new unit
+    pub default_unit: Option<String>,
+    /// Optional new estimated duration
+    pub estimated_duration_hours: Option<BigDecimal>,
+    /// Optional new ingredient template
+    pub ingredient_template: Option<serde_json::Value>,
+    /// Optional new instructions
+    pub instructions: Option<String>,
+}
+
+/// Input for deleting a recipe template.
+#[derive(Debug, InputObject)]
+pub struct DeleteRecipeTemplateInput {
+    /// ID of the recipe template to delete
+    pub id: Uuid,
+}
+
+/// Result from creating or updating a recipe template.
+#[derive(Debug, SimpleObject)]
+pub struct RecipeTemplateResult {
+    /// Whether the operation succeeded
+    pub success: bool,
+    /// Result message (success or error details)
+    pub message: String,
+    /// The created or updated recipe template (if successful)
+    pub recipe: Option<RecipeTemplate>,
+}

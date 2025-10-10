@@ -1,0 +1,97 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE recipe_templates\n            SET\n                product_inventory_id = COALESCE($2, product_inventory_id),\n                template_name = COALESCE($3, template_name),\n                description = COALESCE($4, description),\n                default_batch_size = COALESCE($5, default_batch_size),\n                default_unit = COALESCE($6, default_unit),\n                estimated_duration_hours = COALESCE($7, estimated_duration_hours),\n                ingredient_template = COALESCE($8, ingredient_template),\n                instructions = COALESCE($9, instructions),\n                updated_at = $10\n            WHERE id = $1\n            RETURNING\n                id, product_inventory_id, template_name, description,\n                default_batch_size, default_unit, estimated_duration_hours,\n                ingredient_template, instructions,\n                is_active as \"is_active!\", created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_inventory_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "template_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "default_batch_size",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "default_unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "estimated_duration_hours",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "ingredient_template",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "instructions",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_active!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Text",
+        "Numeric",
+        "Varchar",
+        "Numeric",
+        "Jsonb",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "b2b8a9d87d13f1fe064915fcbfef31c8f4aa88371bb55b7026ec1b43af27c3ad"
+}

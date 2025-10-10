@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO recipe_templates (\n                product_inventory_id, template_name, description,\n                default_batch_size, default_unit, estimated_duration_hours,\n                ingredient_template, instructions, is_active\n            )\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)\n            RETURNING\n                id, product_inventory_id, template_name, description,\n                default_batch_size, default_unit, estimated_duration_hours,\n                ingredient_template, instructions,\n                is_active as \"is_active!\", created_at, updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_inventory_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "template_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "default_batch_size",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "default_unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "estimated_duration_hours",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "ingredient_template",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 8,
+        "name": "instructions",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_active!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Text",
+        "Numeric",
+        "Varchar",
+        "Numeric",
+        "Jsonb",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "2f1b64eaadde0a64c338601ff92529c8926e76006715b38eaeca914b6a6e3047"
+}
