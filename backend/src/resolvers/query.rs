@@ -84,7 +84,7 @@ impl QueryRoot {
 
         let suppliers = sqlx::query_as!(
             Supplier,
-            "SELECT id, name, contact_email, contact_phone, address, latitude, longitude, notes, created_at, updated_at FROM suppliers ORDER BY name"
+            "SELECT id, name, contact_email, contact_phone, street_address, city, state, zip_code, country, latitude, longitude, notes, created_at, updated_at FROM suppliers ORDER BY name"
         )
         .fetch_all(pool)
         .await?;

@@ -19,6 +19,36 @@ class _ConnectionTestScreenState extends ConsumerState<ConnectionTestScreen> {
   String _status = 'Not tested yet';
   bool _isLoading = false;
 
+  /// Formats supplier address from structured fields.
+  String _formatAddress(dynamic supplier) {
+    final parts = <String>[];
+
+    if (supplier.streetAddress != null && supplier.streetAddress!.isNotEmpty) {
+      parts.add(supplier.streetAddress!);
+    }
+
+    final cityStateParts = <String>[];
+    if (supplier.city != null && supplier.city!.isNotEmpty) {
+      cityStateParts.add(supplier.city!);
+    }
+    if (supplier.state != null && supplier.state!.isNotEmpty) {
+      cityStateParts.add(supplier.state!);
+    }
+    if (supplier.zipCode != null && supplier.zipCode!.isNotEmpty) {
+      cityStateParts.add(supplier.zipCode!);
+    }
+
+    if (cityStateParts.isNotEmpty) {
+      parts.add(cityStateParts.join(' '));
+    }
+
+    if (supplier.country != null && supplier.country!.isNotEmpty) {
+      parts.add(supplier.country!);
+    }
+
+    return parts.isEmpty ? 'N/A' : parts.join(', ');
+  }
+
   Future<void> _testPing() async {
     setState(() {
       _isLoading = true;
@@ -116,7 +146,7 @@ class _ConnectionTestScreenState extends ConsumerState<ConnectionTestScreen> {
         setState(() {
           _status = 'Found ${suppliers.length} suppliers:\n\n'
               '${suppliers.map((s) => '${s.name}\n'
-                  'Address: ${s.address ?? "N/A"}\n'
+                  'Address: ${_formatAddress(s)}\n'
                   'Coords: ${s.hasCoordinates ? "${s.latitude}, ${s.longitude}" : "No coordinates"}').join('\n\n')}';
           _isLoading = false;
         });

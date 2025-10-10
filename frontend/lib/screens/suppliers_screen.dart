@@ -80,6 +80,37 @@ class SuppliersScreen extends ConsumerWidget {
     );
   }
 
+  /// Builds a formatted address string from structured address fields.
+  String _buildAddressString(Supplier supplier) {
+    final parts = <String>[];
+
+    if (supplier.streetAddress != null && supplier.streetAddress!.isNotEmpty) {
+      parts.add(supplier.streetAddress!);
+    }
+
+    // Build city, state ZIP line
+    final cityStateParts = <String>[];
+    if (supplier.city != null && supplier.city!.isNotEmpty) {
+      cityStateParts.add(supplier.city!);
+    }
+    if (supplier.state != null && supplier.state!.isNotEmpty) {
+      cityStateParts.add(supplier.state!);
+    }
+    if (supplier.zipCode != null && supplier.zipCode!.isNotEmpty) {
+      cityStateParts.add(supplier.zipCode!);
+    }
+
+    if (cityStateParts.isNotEmpty) {
+      parts.add(cityStateParts.join(' '));
+    }
+
+    if (supplier.country != null && supplier.country!.isNotEmpty) {
+      parts.add(supplier.country!);
+    }
+
+    return parts.join(', ');
+  }
+
   Widget _buildSuppliersList(BuildContext context, List<Supplier> suppliers) {
     if (suppliers.isEmpty) {
       return const Center(
@@ -118,9 +149,9 @@ class SuppliersScreen extends ConsumerWidget {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (supplier.address != null) ...[
+                if (_buildAddressString(supplier).isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(supplier.address!),
+                  Text(_buildAddressString(supplier)),
                 ],
                 if (supplier.contactPhone != null) ...[
                   const SizedBox(height: 2),

@@ -25,7 +25,11 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
   final _nameController = TextEditingController();
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _streetAddressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _stateController = TextEditingController();
+  final _zipCodeController = TextEditingController();
+  final _countryController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
   final _notesController = TextEditingController();
@@ -49,8 +53,20 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
     if (supplier.contactPhone != null) {
       _contactPhoneController.text = supplier.contactPhone!;
     }
-    if (supplier.address != null) {
-      _addressController.text = supplier.address!;
+    if (supplier.streetAddress != null) {
+      _streetAddressController.text = supplier.streetAddress!;
+    }
+    if (supplier.city != null) {
+      _cityController.text = supplier.city!;
+    }
+    if (supplier.state != null) {
+      _stateController.text = supplier.state!;
+    }
+    if (supplier.zipCode != null) {
+      _zipCodeController.text = supplier.zipCode!;
+    }
+    if (supplier.country != null) {
+      _countryController.text = supplier.country!;
     }
     if (supplier.latitude != null) {
       _latitudeController.text = supplier.latitude!.toString();
@@ -68,7 +84,11 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
     _nameController.dispose();
     _contactEmailController.dispose();
     _contactPhoneController.dispose();
-    _addressController.dispose();
+    _streetAddressController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _zipCodeController.dispose();
+    _countryController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
     _notesController.dispose();
@@ -149,15 +169,85 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Address
+            // Address Section
+            Text(
+              'Address',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+
+            // Street Address
             TextFormField(
-              controller: _addressController,
+              controller: _streetAddressController,
               decoration: const InputDecoration(
-                labelText: 'Address',
+                labelText: 'Street Address',
                 hintText: 'Optional',
                 border: OutlineInputBorder(),
               ),
               maxLines: 2,
+            ),
+            const SizedBox(height: 16),
+
+            // City, State, ZIP in a row
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(
+                      labelText: 'City',
+                      hintText: 'Optional',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _stateController,
+                    decoration: const InputDecoration(
+                      labelText: 'State',
+                      hintText: 'MD',
+                      border: OutlineInputBorder(),
+                      counterText: '', // Hide character counter
+                    ),
+                    maxLength: 2,
+                    textCapitalization: TextCapitalization.characters,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        if (value.length != 2) {
+                          return '2 letters';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _zipCodeController,
+                    decoration: const InputDecoration(
+                      labelText: 'ZIP',
+                      hintText: '21701',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Country
+            TextFormField(
+              controller: _countryController,
+              decoration: const InputDecoration(
+                labelText: 'Country',
+                hintText: 'USA',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -285,9 +375,21 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
             contactPhone: _contactPhoneController.text.trim().isEmpty
                 ? null
                 : _contactPhoneController.text.trim(),
-            address: _addressController.text.trim().isEmpty
+            streetAddress: _streetAddressController.text.trim().isEmpty
                 ? null
-                : _addressController.text.trim(),
+                : _streetAddressController.text.trim(),
+            city: _cityController.text.trim().isEmpty
+                ? null
+                : _cityController.text.trim(),
+            state: _stateController.text.trim().isEmpty
+                ? null
+                : _stateController.text.trim().toUpperCase(),
+            zipCode: _zipCodeController.text.trim().isEmpty
+                ? null
+                : _zipCodeController.text.trim(),
+            country: _countryController.text.trim().isEmpty
+                ? null
+                : _countryController.text.trim(),
             latitude: _latitudeController.text.isEmpty
                 ? null
                 : double.parse(_latitudeController.text),
@@ -310,9 +412,21 @@ class _SupplierFormScreenState extends ConsumerState<SupplierFormScreen> {
             contactPhone: _contactPhoneController.text.trim().isEmpty
                 ? null
                 : _contactPhoneController.text.trim(),
-            address: _addressController.text.trim().isEmpty
+            streetAddress: _streetAddressController.text.trim().isEmpty
                 ? null
-                : _addressController.text.trim(),
+                : _streetAddressController.text.trim(),
+            city: _cityController.text.trim().isEmpty
+                ? null
+                : _cityController.text.trim(),
+            state: _stateController.text.trim().isEmpty
+                ? null
+                : _stateController.text.trim().toUpperCase(),
+            zipCode: _zipCodeController.text.trim().isEmpty
+                ? null
+                : _zipCodeController.text.trim(),
+            country: _countryController.text.trim().isEmpty
+                ? null
+                : _countryController.text.trim(),
             latitude: _latitudeController.text.isEmpty
                 ? null
                 : double.parse(_latitudeController.text),

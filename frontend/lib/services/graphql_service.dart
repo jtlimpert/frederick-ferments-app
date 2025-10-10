@@ -88,7 +88,11 @@ class GraphqlService extends _$GraphqlService {
         name
         contactEmail
         contactPhone
-        address
+        streetAddress
+        city
+        state
+        zipCode
+        country
         latitude
         longitude
         notes
@@ -206,7 +210,11 @@ class GraphqlService extends _$GraphqlService {
           name
           contactEmail
           contactPhone
-          address
+          streetAddress
+          city
+          state
+          zipCode
+          country
           latitude
           longitude
           notes
@@ -227,7 +235,11 @@ class GraphqlService extends _$GraphqlService {
           name
           contactEmail
           contactPhone
-          address
+          streetAddress
+          city
+          state
+          zipCode
+          country
           latitude
           longitude
           notes

@@ -47,7 +47,13 @@ The system tracks inventory items with fields for stock levels, reorder points, 
 1. **suppliers** (UUID primary key)
    - `id`: UUID (auto-generated)
    - `name`: VARCHAR (NOT NULL)
-   - `contact_email`, `contact_phone`, `address`, `notes`: Optional fields
+   - `contact_email`, `contact_phone`, `notes`: Optional fields
+   - **Structured Address Fields** (all optional):
+     - `street_address`: VARCHAR(255) - Street address line
+     - `city`: VARCHAR(100) - City name
+     - `state`: VARCHAR(2) - Two-letter state code (e.g., MD)
+     - `zip_code`: VARCHAR(10) - ZIP/postal code
+     - `country`: VARCHAR(100) - Country name (defaults to USA)
    - `latitude`: DECIMAL(10, 8) (nullable) - Latitude for map display
    - `longitude`: DECIMAL(11, 8) (nullable) - Longitude for map display
    - `created_at`, `updated_at`: TIMESTAMPTZ (auto-managed)
@@ -288,7 +294,11 @@ pub struct Supplier {
     pub name: String,
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
-    pub address: Option<String>,
+    pub street_address: Option<String>,
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub zip_code: Option<String>,
+    pub country: Option<String>,
     pub latitude: Option<BigDecimal>,
     pub longitude: Option<BigDecimal>,
     pub notes: Option<String>,

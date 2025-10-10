@@ -9,7 +9,11 @@ class Supplier {
     required this.name,
     this.contactEmail,
     this.contactPhone,
-    this.address,
+    this.streetAddress,
+    this.city,
+    this.state,
+    this.zipCode,
+    this.country,
     this.latitude,
     this.longitude,
     this.notes,
@@ -24,7 +28,11 @@ class Supplier {
       name: json['name'] as String,
       contactEmail: json['contactEmail'] as String?,
       contactPhone: json['contactPhone'] as String?,
-      address: json['address'] as String?,
+      streetAddress: json['streetAddress'] as String?,
+      city: json['city'] as String?,
+      state: json['state'] as String?,
+      zipCode: json['zipCode'] as String?,
+      country: json['country'] as String?,
       latitude: json['latitude'] != null
           ? _parseDouble(json['latitude'])
           : null,
@@ -60,8 +68,20 @@ class Supplier {
   /// Primary contact phone number.
   final String? contactPhone;
 
-  /// Physical or mailing address.
-  final String? address;
+  /// Street address (number and street name).
+  final String? streetAddress;
+
+  /// City name.
+  final String? city;
+
+  /// State code (2 letters, e.g., MD).
+  final String? state;
+
+  /// ZIP/Postal code.
+  final String? zipCode;
+
+  /// Country name (defaults to USA).
+  final String? country;
 
   /// Latitude coordinate for map display.
   final double? latitude;
@@ -89,7 +109,11 @@ class CreateSupplierInput {
     required this.name,
     this.contactEmail,
     this.contactPhone,
-    this.address,
+    this.streetAddress,
+    this.city,
+    this.state,
+    this.zipCode,
+    this.country,
     this.latitude,
     this.longitude,
     this.notes,
@@ -101,7 +125,11 @@ class CreateSupplierInput {
       'name': name,
       if (contactEmail != null) 'contactEmail': contactEmail,
       if (contactPhone != null) 'contactPhone': contactPhone,
-      if (address != null) 'address': address,
+      if (streetAddress != null) 'streetAddress': streetAddress,
+      if (city != null) 'city': city,
+      if (state != null) 'state': state,
+      if (zipCode != null) 'zipCode': zipCode,
+      if (country != null) 'country': country,
       if (latitude != null) 'latitude': latitude.toString(),
       if (longitude != null) 'longitude': longitude.toString(),
       if (notes != null) 'notes': notes,
@@ -111,7 +139,11 @@ class CreateSupplierInput {
   final String name;
   final String? contactEmail;
   final String? contactPhone;
-  final String? address;
+  final String? streetAddress;
+  final String? city;
+  final String? state;
+  final String? zipCode;
+  final String? country;
   final double? latitude;
   final double? longitude;
   final String? notes;
@@ -125,7 +157,11 @@ class UpdateSupplierInput {
     this.name,
     this.contactEmail,
     this.contactPhone,
-    this.address,
+    this.streetAddress,
+    this.city,
+    this.state,
+    this.zipCode,
+    this.country,
     this.latitude,
     this.longitude,
     this.notes,
@@ -138,7 +174,11 @@ class UpdateSupplierInput {
       if (name != null) 'name': name,
       if (contactEmail != null) 'contactEmail': contactEmail,
       if (contactPhone != null) 'contactPhone': contactPhone,
-      if (address != null) 'address': address,
+      if (streetAddress != null) 'streetAddress': streetAddress,
+      if (city != null) 'city': city,
+      if (state != null) 'state': state,
+      if (zipCode != null) 'zipCode': zipCode,
+      if (country != null) 'country': country,
       if (latitude != null) 'latitude': latitude.toString(),
       if (longitude != null) 'longitude': longitude.toString(),
       if (notes != null) 'notes': notes,
@@ -149,7 +189,11 @@ class UpdateSupplierInput {
   final String? name;
   final String? contactEmail;
   final String? contactPhone;
-  final String? address;
+  final String? streetAddress;
+  final String? city;
+  final String? state;
+  final String? zipCode;
+  final String? country;
   final double? latitude;
   final double? longitude;
   final String? notes;
