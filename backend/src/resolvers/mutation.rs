@@ -4,9 +4,10 @@ use chrono::Utc;
 use sqlx::PgPool;
 
 use crate::models::{
-    CompleteProductionBatchInput, CreateProductionBatchInput, CreatePurchaseInput,
-    DeleteInventoryItemInput, DeleteResult, FailProductionBatchInput, InventoryItem,
-    ProductionBatchResult, PurchaseResult,
+    CompleteProductionBatchInput, CreateInventoryItemInput, CreateProductionBatchInput,
+    CreatePurchaseInput, DeleteInventoryItemInput, DeleteResult, FailProductionBatchInput,
+    InventoryItem, InventoryItemResult, ProductionBatchResult, PurchaseResult,
+    UpdateInventoryItemInput,
 };
 
 pub struct MutationRoot;
@@ -489,6 +490,221 @@ impl MutationRoot {
             message: format!("Production batch {} marked as failed", batch.batch_number),
             batch_id: Some(input.batch_id),
             batch_number: Some(batch.batch_number),
+        })
+    }
+
+    /// Create a new inventory item
+    async fn create_inventory_item(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateInventoryItemInput,
+    ) -> Result<InventoryItemResult> {
+        let pool = ctx.data::<PgPool>()?;
+
+        // Check if name already exists
+        let existing = sqlx::query!(
+            "SELECT id FROM inventory WHERE name = $1 AND is_active = true",
+            input.name
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        if existing.is_some() {
+            return Ok(InventoryItemResult {
+                success: false,
+                message: format!("An item with the name '{}' already exists", input.name),
+                item: None,
+            });
+        }
+
+        // Validate supplier_id if provided
+        if let Some(supplier_id) = input.default_supplier_id {
+            let supplier_exists =
+                sqlx::query!("SELECT id FROM suppliers WHERE id = $1", supplier_id)
+                    .fetch_optional(pool)
+                    .await?;
+
+            if supplier_exists.is_none() {
+                return Ok(InventoryItemResult {
+                    success: false,
+                    message: "Supplier not found".to_string(),
+                    item: None,
+                });
+            }
+        }
+
+        let now = Utc::now();
+        let current_stock = input.current_stock.unwrap_or(BigDecimal::from(0));
+        let reserved_stock = input.reserved_stock.unwrap_or(BigDecimal::from(0));
+        let reorder_point = input.reorder_point.unwrap_or(BigDecimal::from(0));
+
+        // Create the inventory item
+        let item = sqlx::query_as!(
+            InventoryItem,
+            r#"
+            INSERT INTO inventory (
+                name, category, unit, current_stock, reserved_stock, reorder_point,
+                cost_per_unit, default_supplier_id, shelf_life_days, storage_requirements,
+                is_active, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $11)
+            RETURNING
+                id,
+                name,
+                category,
+                unit,
+                current_stock as "current_stock!: BigDecimal",
+                reserved_stock as "reserved_stock!: BigDecimal",
+                available_stock as "available_stock!: BigDecimal",
+                reorder_point as "reorder_point!: BigDecimal",
+                cost_per_unit as "cost_per_unit?: BigDecimal",
+                default_supplier_id,
+                shelf_life_days,
+                storage_requirements,
+                is_active,
+                created_at,
+                updated_at
+            "#,
+            input.name,
+            input.category,
+            input.unit,
+            current_stock,
+            reserved_stock,
+            reorder_point,
+            input.cost_per_unit,
+            input.default_supplier_id,
+            input.shelf_life_days,
+            input.storage_requirements,
+            now
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(InventoryItemResult {
+            success: true,
+            message: format!("Successfully created '{}'", item.name),
+            item: Some(item),
+        })
+    }
+
+    /// Update an existing inventory item
+    async fn update_inventory_item(
+        &self,
+        ctx: &Context<'_>,
+        input: UpdateInventoryItemInput,
+    ) -> Result<InventoryItemResult> {
+        let pool = ctx.data::<PgPool>()?;
+        let mut tx = pool.begin().await?;
+
+        // Check if item exists
+        let existing = sqlx::query!("SELECT name FROM inventory WHERE id = $1", input.id)
+            .fetch_optional(&mut *tx)
+            .await?;
+
+        if existing.is_none() {
+            return Ok(InventoryItemResult {
+                success: false,
+                message: "Inventory item not found".to_string(),
+                item: None,
+            });
+        }
+
+        // Check if new name conflicts with existing items (if name is being changed)
+        if let Some(ref new_name) = input.name {
+            let name_conflict = sqlx::query!(
+                "SELECT id FROM inventory WHERE name = $1 AND id != $2 AND is_active = true",
+                new_name,
+                input.id
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
+
+            if name_conflict.is_some() {
+                return Ok(InventoryItemResult {
+                    success: false,
+                    message: format!("An item with the name '{}' already exists", new_name),
+                    item: None,
+                });
+            }
+        }
+
+        // Validate supplier_id if provided
+        if let Some(supplier_id) = input.default_supplier_id {
+            let supplier_exists =
+                sqlx::query!("SELECT id FROM suppliers WHERE id = $1", supplier_id)
+                    .fetch_optional(&mut *tx)
+                    .await?;
+
+            if supplier_exists.is_none() {
+                return Ok(InventoryItemResult {
+                    success: false,
+                    message: "Supplier not found".to_string(),
+                    item: None,
+                });
+            }
+        }
+
+        let now = Utc::now();
+
+        // Build update query dynamically based on provided fields
+        // For simplicity, we'll use COALESCE to keep existing values if new ones aren't provided
+        let item = sqlx::query_as!(
+            InventoryItem,
+            r#"
+            UPDATE inventory
+            SET
+                name = COALESCE($2, name),
+                category = COALESCE($3, category),
+                unit = COALESCE($4, unit),
+                current_stock = COALESCE($5, current_stock),
+                reserved_stock = COALESCE($6, reserved_stock),
+                reorder_point = COALESCE($7, reorder_point),
+                cost_per_unit = COALESCE($8, cost_per_unit),
+                default_supplier_id = COALESCE($9, default_supplier_id),
+                shelf_life_days = COALESCE($10, shelf_life_days),
+                storage_requirements = COALESCE($11, storage_requirements),
+                is_active = COALESCE($12, is_active),
+                updated_at = $13
+            WHERE id = $1
+            RETURNING
+                id,
+                name,
+                category,
+                unit,
+                current_stock as "current_stock!: BigDecimal",
+                reserved_stock as "reserved_stock!: BigDecimal",
+                available_stock as "available_stock!: BigDecimal",
+                reorder_point as "reorder_point!: BigDecimal",
+                cost_per_unit as "cost_per_unit?: BigDecimal",
+                default_supplier_id,
+                shelf_life_days,
+                storage_requirements,
+                is_active,
+                created_at,
+                updated_at
+            "#,
+            input.id,
+            input.name,
+            input.category,
+            input.unit,
+            input.current_stock,
+            input.reserved_stock,
+            input.reorder_point,
+            input.cost_per_unit,
+            input.default_supplier_id,
+            input.shelf_life_days,
+            input.storage_requirements,
+            input.is_active,
+            now
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
+
+        Ok(InventoryItemResult {
+            success: true,
+            message: format!("Successfully updated '{}'", item.name),
+            item: Some(item),
         })
     }
 

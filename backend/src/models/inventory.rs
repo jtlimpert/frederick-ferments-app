@@ -75,3 +75,40 @@ pub struct DeleteResult {
     pub success: bool,
     pub message: String,
 }
+
+#[derive(Debug, InputObject)]
+pub struct CreateInventoryItemInput {
+    pub name: String,
+    pub category: String,
+    pub unit: String,
+    pub current_stock: Option<BigDecimal>,  // Defaults to 0
+    pub reserved_stock: Option<BigDecimal>, // Defaults to 0
+    pub reorder_point: Option<BigDecimal>,  // Defaults to 0
+    pub cost_per_unit: Option<BigDecimal>,
+    pub default_supplier_id: Option<Uuid>,
+    pub shelf_life_days: Option<i32>,
+    pub storage_requirements: Option<String>,
+}
+
+#[derive(Debug, InputObject)]
+pub struct UpdateInventoryItemInput {
+    pub id: Uuid,
+    pub name: Option<String>,
+    pub category: Option<String>,
+    pub unit: Option<String>,
+    pub current_stock: Option<BigDecimal>,
+    pub reserved_stock: Option<BigDecimal>,
+    pub reorder_point: Option<BigDecimal>,
+    pub cost_per_unit: Option<BigDecimal>,
+    pub default_supplier_id: Option<Uuid>,
+    pub shelf_life_days: Option<i32>,
+    pub storage_requirements: Option<String>,
+    pub is_active: Option<bool>,
+}
+
+#[derive(Debug, SimpleObject)]
+pub struct InventoryItemResult {
+    pub success: bool,
+    pub message: String,
+    pub item: Option<InventoryItem>,
+}

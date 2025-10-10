@@ -144,6 +144,58 @@ class GraphqlService extends _$GraphqlService {
     }
   ''';
 
+  static const _createInventoryItemMutation = r'''
+    mutation CreateInventoryItem($input: CreateInventoryItemInput!) {
+      createInventoryItem(input: $input) {
+        success
+        message
+        item {
+          id
+          name
+          category
+          unit
+          currentStock
+          reservedStock
+          availableStock
+          reorderPoint
+          costPerUnit
+          defaultSupplierId
+          shelfLifeDays
+          storageRequirements
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  ''';
+
+  static const _updateInventoryItemMutation = r'''
+    mutation UpdateInventoryItem($input: UpdateInventoryItemInput!) {
+      updateInventoryItem(input: $input) {
+        success
+        message
+        item {
+          id
+          name
+          category
+          unit
+          currentStock
+          reservedStock
+          availableStock
+          reorderPoint
+          costPerUnit
+          defaultSupplierId
+          shelfLifeDays
+          storageRequirements
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    }
+  ''';
+
   /// GraphQL query to fetch active production batches.
   static const _activeBatchesQuery = r'''
     query GetActiveBatches {
@@ -432,6 +484,88 @@ class GraphqlService extends _$GraphqlService {
     } catch (e, s) {
       developer.log(
         'Error in createPurchase',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Creates a new inventory item.
+  ///
+  /// Returns an [InventoryItemResult] with the created item.
+  /// Throws an exception if the request fails.
+  Future<InventoryItemResult> createInventoryItem(CreateInventoryItemInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_createInventoryItemMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to create inventory item',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final itemData = result.data?['createInventoryItem'] as Map<String, dynamic>?;
+      if (itemData == null) {
+        throw Exception('No data returned from createInventoryItem mutation');
+      }
+
+      return InventoryItemResult.fromJson(itemData);
+    } catch (e, s) {
+      developer.log(
+        'Error in createInventoryItem',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Updates an existing inventory item.
+  ///
+  /// Returns an [InventoryItemResult] with the updated item.
+  /// Throws an exception if the request fails.
+  Future<InventoryItemResult> updateInventoryItem(UpdateInventoryItemInput input) async {
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(_updateInventoryItemMutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to update inventory item',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final itemData = result.data?['updateInventoryItem'] as Map<String, dynamic>?;
+      if (itemData == null) {
+        throw Exception('No data returned from updateInventoryItem mutation');
+      }
+
+      return InventoryItemResult.fromJson(itemData);
+    } catch (e, s) {
+      developer.log(
+        'Error in updateInventoryItem',
         name: 'graphql_service',
         level: 1000,
         error: e,

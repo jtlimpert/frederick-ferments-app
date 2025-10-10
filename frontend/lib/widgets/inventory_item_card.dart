@@ -10,11 +10,13 @@ class InventoryItemCard extends StatelessWidget {
   const InventoryItemCard({
     required this.item,
     this.onDelete,
+    this.onEdit,
     super.key,
   });
 
   final InventoryItem item;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   /// Determines the stock status based on available stock vs reorder point.
   StockStatus get _stockStatus {
@@ -91,6 +93,16 @@ class InventoryItemCard extends StatelessWidget {
                   color: statusColor,
                   size: 28,
                 ),
+                if (onEdit != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: onEdit,
+                    tooltip: 'Edit item',
+                    iconSize: 24,
+                    color: theme.colorScheme.primary,
+                  ),
+                ],
                 if (onDelete != null) ...[
                   const SizedBox(width: 8),
                   IconButton(

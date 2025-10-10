@@ -1,0 +1,118 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE inventory\n            SET\n                name = COALESCE($2, name),\n                category = COALESCE($3, category),\n                unit = COALESCE($4, unit),\n                current_stock = COALESCE($5, current_stock),\n                reserved_stock = COALESCE($6, reserved_stock),\n                reorder_point = COALESCE($7, reorder_point),\n                cost_per_unit = COALESCE($8, cost_per_unit),\n                default_supplier_id = COALESCE($9, default_supplier_id),\n                shelf_life_days = COALESCE($10, shelf_life_days),\n                storage_requirements = COALESCE($11, storage_requirements),\n                is_active = COALESCE($12, is_active),\n                updated_at = $13\n            WHERE id = $1\n            RETURNING\n                id,\n                name,\n                category,\n                unit,\n                current_stock as \"current_stock!: BigDecimal\",\n                reserved_stock as \"reserved_stock!: BigDecimal\",\n                available_stock as \"available_stock!: BigDecimal\",\n                reorder_point as \"reorder_point!: BigDecimal\",\n                cost_per_unit as \"cost_per_unit?: BigDecimal\",\n                default_supplier_id,\n                shelf_life_days,\n                storage_requirements,\n                is_active,\n                created_at,\n                updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "current_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "reserved_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "available_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "reorder_point!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 8,
+        "name": "cost_per_unit?: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 9,
+        "name": "default_supplier_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "shelf_life_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "storage_requirements",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Uuid",
+        "Int4",
+        "Text",
+        "Bool",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5fcbbfbee83d3cd18b8f8a604b6d157da6d8b27a66f7d31f3239e368069ce599"
+}

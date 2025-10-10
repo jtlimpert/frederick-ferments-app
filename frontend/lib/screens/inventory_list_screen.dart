@@ -6,6 +6,7 @@ import '../services/graphql_service.dart';
 import '../services/inventory_provider.dart';
 import '../widgets/inventory_item_card.dart';
 import 'create_purchase_screen.dart';
+import 'inventory_item_form_screen.dart';
 
 /// Main screen displaying the list of inventory items.
 ///
@@ -42,16 +43,35 @@ class InventoryListScreen extends ConsumerWidget {
           ],
         ),
         body: body,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const CreatePurchaseScreen(),
-              ),
-            );
-          },
-          icon: const Icon(Icons.add_shopping_cart),
-          label: const Text('New Purchase'),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton.extended(
+              heroTag: 'newItem',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const InventoryItemFormScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('New Item'),
+            ),
+            const SizedBox(height: 12),
+            FloatingActionButton.extended(
+              heroTag: 'newPurchase',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreatePurchaseScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add_shopping_cart),
+              label: const Text('New Purchase'),
+            ),
+          ],
         ),
       );
     }
@@ -72,16 +92,35 @@ class InventoryListScreen extends ConsumerWidget {
         ],
       ),
       body: body,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const CreatePurchaseScreen(),
-            ),
-          );
-        },
-        icon: const Icon(Icons.add_shopping_cart),
-        label: const Text('New Purchase'),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'newItem',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const InventoryItemFormScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('New Item'),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'newPurchase',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreatePurchaseScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add_shopping_cart),
+            label: const Text('New Purchase'),
+          ),
+        ],
       ),
     );
   }
@@ -109,9 +148,19 @@ class InventoryListScreen extends ConsumerWidget {
           final item = items[index] as InventoryItem;
           return InventoryItemCard(
             item: item,
+            onEdit: () => _editItem(context, item),
             onDelete: () => _showDeleteConfirmation(context, ref, item),
           );
         },
+      ),
+    );
+  }
+
+  /// Navigates to the edit screen for an item.
+  void _editItem(BuildContext context, InventoryItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => InventoryItemFormScreen(item: item),
       ),
     );
   }

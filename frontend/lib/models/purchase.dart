@@ -156,3 +156,187 @@ class UpdatedInventoryItem {
   /// Updated cost per unit.
   final double? costPerUnit;
 }
+
+/// Input for creating a new inventory item.
+class CreateInventoryItemInput {
+  /// Creates an inventory item input.
+  const CreateInventoryItemInput({
+    required this.name,
+    required this.category,
+    required this.unit,
+    this.currentStock,
+    this.reservedStock,
+    this.reorderPoint,
+    this.costPerUnit,
+    this.defaultSupplierId,
+    this.shelfLifeDays,
+    this.storageRequirements,
+  });
+
+  /// Converts to GraphQL mutation variables format.
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'category': category,
+      'unit': unit,
+      if (currentStock != null) 'currentStock': currentStock.toString(),
+      if (reservedStock != null) 'reservedStock': reservedStock.toString(),
+      if (reorderPoint != null) 'reorderPoint': reorderPoint.toString(),
+      if (costPerUnit != null) 'costPerUnit': costPerUnit.toString(),
+      if (defaultSupplierId != null) 'defaultSupplierId': defaultSupplierId,
+      if (shelfLifeDays != null) 'shelfLifeDays': shelfLifeDays,
+      if (storageRequirements != null) 'storageRequirements': storageRequirements,
+    };
+  }
+
+  final String name;
+  final String category;
+  final String unit;
+  final double? currentStock;
+  final double? reservedStock;
+  final double? reorderPoint;
+  final double? costPerUnit;
+  final String? defaultSupplierId;
+  final int? shelfLifeDays;
+  final String? storageRequirements;
+}
+
+/// Input for updating an existing inventory item.
+class UpdateInventoryItemInput {
+  /// Creates an update inventory item input.
+  const UpdateInventoryItemInput({
+    required this.id,
+    this.name,
+    this.category,
+    this.unit,
+    this.currentStock,
+    this.reservedStock,
+    this.reorderPoint,
+    this.costPerUnit,
+    this.defaultSupplierId,
+    this.shelfLifeDays,
+    this.storageRequirements,
+    this.isActive,
+  });
+
+  /// Converts to GraphQL mutation variables format.
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      if (name != null) 'name': name,
+      if (category != null) 'category': category,
+      if (unit != null) 'unit': unit,
+      if (currentStock != null) 'currentStock': currentStock.toString(),
+      if (reservedStock != null) 'reservedStock': reservedStock.toString(),
+      if (reorderPoint != null) 'reorderPoint': reorderPoint.toString(),
+      if (costPerUnit != null) 'costPerUnit': costPerUnit.toString(),
+      if (defaultSupplierId != null) 'defaultSupplierId': defaultSupplierId,
+      if (shelfLifeDays != null) 'shelfLifeDays': shelfLifeDays,
+      if (storageRequirements != null) 'storageRequirements': storageRequirements,
+      if (isActive != null) 'isActive': isActive,
+    };
+  }
+
+  final String id;
+  final String? name;
+  final String? category;
+  final String? unit;
+  final double? currentStock;
+  final double? reservedStock;
+  final double? reorderPoint;
+  final double? costPerUnit;
+  final String? defaultSupplierId;
+  final int? shelfLifeDays;
+  final String? storageRequirements;
+  final bool? isActive;
+}
+
+/// Result from create/update inventory item mutations.
+class InventoryItemResult {
+  /// Creates an inventory item result.
+  const InventoryItemResult({
+    required this.success,
+    required this.message,
+    this.item,
+  });
+
+  /// Creates a result from GraphQL JSON response.
+  factory InventoryItemResult.fromJson(Map<String, dynamic> json) {
+    return InventoryItemResult(
+      success: json['success'] as bool,
+      message: json['message'] as String,
+      item: json['item'] != null
+          ? ResultInventoryItem.fromJson(json['item'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  final bool success;
+  final String message;
+  final ResultInventoryItem? item;
+}
+
+/// Full inventory item returned from create/update mutations.
+class ResultInventoryItem {
+  /// Creates a result inventory item.
+  const ResultInventoryItem({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.unit,
+    required this.currentStock,
+    required this.reservedStock,
+    required this.availableStock,
+    required this.reorderPoint,
+    this.costPerUnit,
+    this.defaultSupplierId,
+    this.shelfLifeDays,
+    this.storageRequirements,
+    required this.isActive,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  /// Creates from GraphQL JSON response.
+  factory ResultInventoryItem.fromJson(Map<String, dynamic> json) {
+    return ResultInventoryItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      category: json['category'] as String,
+      unit: json['unit'] as String,
+      currentStock: _parseDouble(json['currentStock']),
+      reservedStock: _parseDouble(json['reservedStock']),
+      availableStock: _parseDouble(json['availableStock']),
+      reorderPoint: _parseDouble(json['reorderPoint']),
+      costPerUnit: json['costPerUnit'] != null ? _parseDouble(json['costPerUnit']) : null,
+      defaultSupplierId: json['defaultSupplierId'] as String?,
+      shelfLifeDays: json['shelfLifeDays'] as int?,
+      storageRequirements: json['storageRequirements'] as String?,
+      isActive: json['isActive'] as bool,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.parse(value);
+    throw FormatException('Cannot parse $value to double');
+  }
+
+  final String id;
+  final String name;
+  final String category;
+  final String unit;
+  final double currentStock;
+  final double reservedStock;
+  final double availableStock;
+  final double reorderPoint;
+  final double? costPerUnit;
+  final String? defaultSupplierId;
+  final int? shelfLifeDays;
+  final String? storageRequirements;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}

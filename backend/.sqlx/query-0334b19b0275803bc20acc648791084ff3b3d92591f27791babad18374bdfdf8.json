@@ -1,0 +1,116 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO inventory (\n                name, category, unit, current_stock, reserved_stock, reorder_point,\n                cost_per_unit, default_supplier_id, shelf_life_days, storage_requirements,\n                is_active, created_at, updated_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $11)\n            RETURNING\n                id,\n                name,\n                category,\n                unit,\n                current_stock as \"current_stock!: BigDecimal\",\n                reserved_stock as \"reserved_stock!: BigDecimal\",\n                available_stock as \"available_stock!: BigDecimal\",\n                reorder_point as \"reorder_point!: BigDecimal\",\n                cost_per_unit as \"cost_per_unit?: BigDecimal\",\n                default_supplier_id,\n                shelf_life_days,\n                storage_requirements,\n                is_active,\n                created_at,\n                updated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "unit",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "current_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "reserved_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "available_stock!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "reorder_point!: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 8,
+        "name": "cost_per_unit?: BigDecimal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 9,
+        "name": "default_supplier_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 10,
+        "name": "shelf_life_days",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "storage_requirements",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "is_active",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Uuid",
+        "Int4",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0334b19b0275803bc20acc648791084ff3b3d92591f27791babad18374bdfdf8"
+}

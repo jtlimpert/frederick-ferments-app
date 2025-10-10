@@ -13,23 +13,26 @@ Frederick Ferments is a fermentation business inventory management system built 
 - **Deployment**: Docker Compose setup with health checks
 - **Runtime**: Tokio async runtime
 
-The system tracks inventory items with fields for stock levels, reorder points, suppliers (with geographic coordinates), and purchase history. The GraphQL API provides queries for inventory items and suppliers, with mutations for purchase operations. The Flutter frontend provides adaptive UI (bottom navigation for mobile, side rail for web/desktop).
+The system tracks inventory items with fields for stock levels, reorder points, suppliers (with geographic coordinates), purchase history, and production batches. The GraphQL API provides queries for inventory, suppliers, production batches, and recipe templates, with mutations for purchases, production batch management, and inventory deletion. The Flutter frontend provides adaptive UI (bottom navigation for mobile, side rail for web/desktop) with three main screens: Inventory, Production, and Suppliers.
 
 ### Key Components
 
 **Backend Structure:**
 - `backend/src/main.rs`: Main server entry point with GraphQL schema setup and connection pooling (max 10 connections)
-- `backend/src/models/inventory.rs`: Core data models (InventoryItem, Supplier, Purchase inputs/outputs)
-- `backend/src/resolvers/query.rs`: GraphQL query resolvers (inventory_items, suppliers, health_check, ping)
-- `backend/src/resolvers/mutation.rs`: GraphQL mutation resolvers (create_purchase)
+- `backend/src/models/inventory.rs`: Core data models (InventoryItem, Supplier, ProductionBatch, RecipeTemplate, Purchase/Production inputs/outputs)
+- `backend/src/resolvers/query.rs`: GraphQL query resolvers (inventory_items, suppliers, active_batches, production_history, recipe_templates, health_check, ping)
+- `backend/src/resolvers/mutation.rs`: GraphQL mutation resolvers (create_purchase, create_production_batch, complete_production_batch, fail_production_batch, delete_inventory_item)
 - `backend/Cargo.toml`: Dependencies configuration
 
 **Frontend Structure:**
 - `frontend/lib/main.dart`: App entry point with theme configuration
-- `frontend/lib/screens/home_screen.dart`: Adaptive navigation wrapper (bottom nav for mobile, side rail for web)
+- `frontend/lib/screens/home_screen.dart`: Adaptive navigation wrapper (3 tabs: Inventory, Production, Suppliers)
 - `frontend/lib/screens/inventory_list_screen.dart`: Inventory list with stock status indicators
+- `frontend/lib/screens/production_screen.dart`: Production management (active batches, "what can I make?", history)
+- `frontend/lib/screens/create_production_batch_screen.dart`: Create new production batch with recipe template support
+- `frontend/lib/screens/complete_production_batch_screen.dart`: Complete batch with yield tracking
 - `frontend/lib/screens/suppliers_screen.dart`: Suppliers list view (map view planned)
-- `frontend/lib/models/`: Data models (InventoryItem, Supplier)
+- `frontend/lib/models/`: Data models (InventoryItem, Supplier, ProductionBatch, RecipeTemplate, Purchase)
 - `frontend/lib/services/`: GraphQL service and Riverpod providers
 - `frontend/lib/widgets/`: Reusable UI components (InventoryItemCard)
 
@@ -82,15 +85,14 @@ The system tracks inventory items with fields for stock levels, reorder points, 
    - `default_batch_size`: DECIMAL(10,3) (nullable)
    - `default_unit`: VARCHAR(50) (nullable)
    - `estimated_duration_hours`: DECIMAL(6,2) (nullable)
-   - `reminder_schedule`: JSONB (nullable) - Array of reminder definitions
-   - `ingredient_template`: JSONB (nullable) - Default ingredient ratios
+   - `ingredient_template`: JSONB (nullable) - Format: `{"ingredients": [{"inventory_id": "uuid", "quantity_per_batch": number, "unit": "string"}]}`
    - `instructions`: TEXT (nullable)
    - `is_active`: BOOLEAN (default true)
    - `created_at`, `updated_at`: TIMESTAMPTZ (auto-managed)
 
 5. **production_batches** (UUID primary key)
    - `id`: UUID (auto-generated)
-   - `batch_number`: VARCHAR(100) (NOT NULL, UNIQUE)
+   - `batch_number`: VARCHAR(100) (NOT NULL, UNIQUE) - Auto-generated format: `BATCH-YYYYMMDD-NNN`
    - `product_inventory_id`: UUID (foreign key to inventory, NOT NULL)
    - `recipe_template_id`: UUID (foreign key to recipe_templates, nullable)
    - `batch_size`: DECIMAL(10,3) (NOT NULL)
@@ -100,9 +102,9 @@ The system tracks inventory items with fields for stock levels, reorder points, 
    - `completion_date`: TIMESTAMPTZ (nullable)
    - `production_date`: TIMESTAMPTZ (NOT NULL, default NOW())
    - `status`: VARCHAR(50) (NOT NULL, default 'in_progress') - values: 'in_progress', 'completed', 'failed'
-   - `production_time_hours`: DECIMAL(6,2) (nullable)
-   - `yield_percentage`: DECIMAL(5,2) (nullable)
-   - `actual_yield`: DECIMAL(10,3) (nullable)
+   - `production_time_hours`: DECIMAL(6,2) (nullable) - Auto-calculated on completion
+   - `yield_percentage`: DECIMAL(5,2) (nullable) - Auto-calculated: `(actual_yield / batch_size) * 100`
+   - `actual_yield`: DECIMAL(10,3) (nullable) - Set on completion
    - `quality_notes`: TEXT (nullable)
    - `storage_location`: VARCHAR(100) (nullable)
    - `notes`: TEXT (nullable)
@@ -116,16 +118,7 @@ The system tracks inventory items with fields for stock levels, reorder points, 
    - `unit`: VARCHAR(50) (NOT NULL)
    - `notes`: TEXT (nullable)
 
-7. **production_reminders** (UUID primary key)
-   - `id`: UUID (auto-generated)
-   - `batch_id`: UUID (foreign key to production_batches, NOT NULL, CASCADE DELETE)
-   - `reminder_type`: VARCHAR(50) (NOT NULL)
-   - `message`: TEXT (NOT NULL)
-   - `due_at`: TIMESTAMPTZ (NOT NULL)
-   - `completed_at`: TIMESTAMPTZ (nullable)
-   - `snoozed_until`: TIMESTAMPTZ (nullable)
-   - `notes`: TEXT (nullable)
-   - `created_at`: TIMESTAMPTZ (auto-managed)
+**Note:** The `production_reminders` table exists in the database schema but is not currently used by the application. It was removed in a recent update for simplification.
 
 **Indexes:**
 - `idx_inventory_active` on inventory(is_active)
@@ -142,8 +135,6 @@ The system tracks inventory items with fields for stock levels, reorder points, 
 - `idx_production_batch_ingredients_ingredient` on production_batch_ingredients(ingredient_inventory_id)
 - `idx_recipe_templates_product` on recipe_templates(product_inventory_id)
 - `idx_recipe_templates_active` on recipe_templates(is_active) WHERE is_active = true
-- `idx_reminders_batch` on production_reminders(batch_id)
-- `idx_reminders_due_pending` on production_reminders(due_at) WHERE completed_at IS NULL
 
 ## Development Commands
 
@@ -298,7 +289,48 @@ pub struct Supplier {
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
     pub address: Option<String>,
+    pub latitude: Option<BigDecimal>,
+    pub longitude: Option<BigDecimal>,
     pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// Production batch
+pub struct ProductionBatch {
+    pub id: Uuid,
+    pub batch_number: String,              // Auto-generated: BATCH-YYYYMMDD-NNN
+    pub product_inventory_id: Uuid,
+    pub recipe_template_id: Option<Uuid>,
+    pub batch_size: BigDecimal,
+    pub unit: String,
+    pub start_date: DateTime<Utc>,
+    pub estimated_completion_date: Option<DateTime<Utc>>,
+    pub completion_date: Option<DateTime<Utc>>,
+    pub production_date: DateTime<Utc>,
+    pub status: String,                    // 'in_progress', 'completed', 'failed'
+    pub production_time_hours: Option<BigDecimal>,
+    pub yield_percentage: Option<BigDecimal>,
+    pub actual_yield: Option<BigDecimal>,
+    pub quality_notes: Option<String>,
+    pub storage_location: Option<String>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// Recipe template
+pub struct RecipeTemplate {
+    pub id: Uuid,
+    pub product_inventory_id: Uuid,
+    pub template_name: String,
+    pub description: Option<String>,
+    pub default_batch_size: Option<BigDecimal>,
+    pub default_unit: Option<String>,
+    pub estimated_duration_hours: Option<BigDecimal>,
+    pub ingredient_template: Option<serde_json::Value>, // JSONB
+    pub instructions: Option<String>,
+    pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -324,6 +356,44 @@ pub struct PurchaseResult {
     pub success: bool,
     pub message: String,
     pub updated_items: Vec<InventoryItem>,
+}
+
+// Production batch creation input
+pub struct CreateProductionBatchInput {
+    pub product_inventory_id: Uuid,
+    pub recipe_template_id: Option<Uuid>,
+    pub batch_size: BigDecimal,
+    pub unit: String,
+    pub estimated_completion_date: Option<DateTime<Utc>>,
+    pub storage_location: Option<String>,
+    pub notes: Option<String>,
+    pub ingredients: Vec<IngredientInput>,
+}
+
+pub struct IngredientInput {
+    pub inventory_id: Uuid,
+    pub quantity_used: BigDecimal,
+}
+
+// Production batch completion input
+pub struct CompleteProductionBatchInput {
+    pub batch_id: Uuid,
+    pub actual_yield: BigDecimal,
+    pub quality_notes: Option<String>,
+}
+
+// Production batch failure input
+pub struct FailProductionBatchInput {
+    pub batch_id: Uuid,
+    pub reason: String,
+}
+
+// Production batch operation result
+pub struct ProductionBatchResult {
+    pub success: bool,
+    pub message: String,
+    pub batch_id: Option<Uuid>,
+    pub batch_number: Option<String>,
 }
 ```
 
@@ -374,7 +444,7 @@ query {
 - Only returns items where `is_active = true`
 - Ordered by name alphabetically
 
-**4. Get All Suppliers** (`backend/src/resolvers/query.rs:86`)
+**4. Get All Suppliers** (`backend/src/resolvers/query.rs:82`)
 ```graphql
 query {
   suppliers {
@@ -383,6 +453,8 @@ query {
     contactEmail
     contactPhone
     address
+    latitude
+    longitude
     notes
     createdAt
     updatedAt
@@ -390,6 +462,74 @@ query {
 }
 ```
 - Ordered by name alphabetically
+
+**5. Get Active Production Batches** (`backend/src/resolvers/query.rs:96`)
+```graphql
+query {
+  activeBatches {
+    id
+    batchNumber
+    productInventoryId
+    recipeTemplateId
+    batchSize
+    unit
+    startDate
+    estimatedCompletionDate
+    status
+    storageLocation
+    notes
+    createdAt
+  }
+}
+```
+- Only returns batches with `status = 'in_progress'`
+- Ordered by start_date DESC
+
+**6. Get Production History** (`backend/src/resolvers/query.rs:150`)
+```graphql
+query {
+  productionHistory(
+    productInventoryId: "uuid-here"  # Optional filter by product
+    limit: 20                         # Optional, default 50, max 500
+  ) {
+    id
+    batchNumber
+    productInventoryId
+    batchSize
+    unit
+    startDate
+    completionDate
+    status
+    yieldPercentage
+    actualYield
+    productionTimeHours
+    qualityNotes
+  }
+}
+```
+- Ordered by start_date DESC
+- Shows all statuses (in_progress, completed, failed)
+
+**7. Get Recipe Templates** (`backend/src/resolvers/query.rs:205`)
+```graphql
+query {
+  recipeTemplates {
+    id
+    productInventoryId
+    templateName
+    description
+    defaultBatchSize
+    defaultUnit
+    estimatedDurationHours
+    ingredientTemplate    # JSONB with ingredient ratios
+    instructions
+    isActive
+    createdAt
+  }
+}
+```
+- Only returns active templates (`is_active = true`)
+- Ordered by template_name
 
 ### Available Mutations
 
@@ -423,7 +563,7 @@ mutation {
 }
 ```
 
-**Purchase Flow** (`backend/src/resolvers/mutation.rs:13-92`):
+**Purchase Flow** (`backend/src/resolvers/mutation.rs:17-99`):
 1. Begins database transaction
 2. For each item in purchase:
    - Inserts entry into `inventory_logs` table with movement_type='purchase'
@@ -436,6 +576,112 @@ mutation {
 - Stock updates are additive: `current_stock = current_stock + quantity`
 - Cost is updated to the most recent purchase price
 - Audit trail maintained in `inventory_logs`
+
+**2. Create Production Batch** (`backend/src/resolvers/mutation.rs:102`)
+```graphql
+mutation {
+  createProductionBatch(input: {
+    productInventoryId: "uuid-here"
+    recipeTemplateId: "uuid-here"        # Optional
+    batchSize: 2.0
+    unit: "loaves"
+    estimatedCompletionDate: "2025-10-12T12:00:00Z"  # Optional
+    storageLocation: "Fridge #2"         # Optional
+    notes: "Using starter from last week" # Optional
+    ingredients: [
+      {
+        inventoryId: "uuid-here"
+        quantityUsed: 0.5
+      }
+    ]
+  }) {
+    success
+    message
+    batchId
+    batchNumber    # Auto-generated: BATCH-20251010-001
+  }
+}
+```
+
+**Production Batch Creation Flow** (`backend/src/resolvers/mutation.rs:102-308`):
+1. Validates batch size > 0 and at least one ingredient
+2. Validates product exists and is active
+3. Validates all ingredients exist and have sufficient stock
+4. Generates unique batch number (BATCH-YYYYMMDD-NNN)
+5. Creates production_batches record with status='in_progress'
+6. For each ingredient:
+   - Creates production_batch_ingredients record
+   - Decrements ingredient stock
+   - Logs consumption in inventory_logs (movement_type='production_use')
+7. Commits transaction
+8. Returns batch ID and number
+
+**3. Complete Production Batch** (`backend/src/resolvers/mutation.rs:311`)
+```graphql
+mutation {
+  completeProductionBatch(input: {
+    batchId: "uuid-here"
+    actualYield: 1.8              # Actual units produced
+    qualityNotes: "Perfect rise!" # Optional
+  }) {
+    success
+    message
+    batchId
+    batchNumber
+  }
+}
+```
+
+**Completion Flow** (`backend/src/resolvers/mutation.rs:311-423`):
+1. Validates batch exists and status is 'in_progress'
+2. Calculates yield_percentage: (actual_yield / batch_size) * 100
+3. Calculates production_time_hours from start_date to now
+4. Updates batch: status='completed', adds yield metrics
+5. Adds finished product to inventory (increments current_stock)
+6. Logs production output in inventory_logs (movement_type='production_output')
+7. Commits transaction
+
+**4. Fail Production Batch** (`backend/src/resolvers/mutation.rs:426`)
+```graphql
+mutation {
+  failProductionBatch(input: {
+    batchId: "uuid-here"
+    reason: "Starter wasn't active"
+  }) {
+    success
+    message
+    batchId
+    batchNumber
+  }
+}
+```
+
+**Failure Flow** (`backend/src/resolvers/mutation.rs:426-493`):
+1. Validates batch exists and status is 'in_progress'
+2. Updates batch: status='failed', sets completion_date, adds reason to quality_notes
+3. Does NOT refund ingredients (they were consumed)
+4. Does NOT add finished product to inventory
+5. Commits transaction
+
+**5. Delete Inventory Item** (`backend/src/resolvers/mutation.rs:497`)
+```graphql
+mutation {
+  deleteInventoryItem(input: {
+    inventoryId: "uuid-here"
+  }) {
+    success
+    message
+  }
+}
+```
+
+**Deletion Flow** (`backend/src/resolvers/mutation.rs:497-562`):
+1. Validates item exists
+2. Checks for active production batches using this item as ingredient
+3. If active batches exist, returns error (prevents deletion)
+4. Hard deletes item from inventory table
+5. Cascading deletes handle related records
+6. Commits transaction
 
 ## Environment Configuration
 
@@ -728,7 +974,7 @@ linter:
 ### Current Features
 
 **Adaptive Navigation:**
-- **Mobile (< 640px width)**: Bottom navigation bar with Inventory and Suppliers tabs
+- **Mobile (< 640px width)**: Bottom navigation bar with 3 tabs (Inventory, Production, Suppliers)
 - **Web/Desktop (≥ 640px width)**: Side navigation rail for better desktop UX
 - Automatically adapts based on screen width using `LayoutBuilder`
 
@@ -741,6 +987,44 @@ linter:
 - Shows available stock, reserved stock, cost per unit, and category
 - Progress bars visualizing stock levels
 - Material 3 design with cards and elevation
+
+**Production Screen** ([production_screen.dart:14](frontend/lib/screens/production_screen.dart#L14)):
+- **Section 1: In Progress Batches**
+  - Shows all active production batches (status='in_progress')
+  - Displays batch number, size, unit, and time since start
+  - Actions: Complete batch or mark as failed
+  - Refreshes data automatically after actions
+- **Section 2: "What Can I Make?"**
+  - Lists all finished products (category='finished_product')
+  - Shows current stock levels
+  - Quick "Make" button to start production batch
+  - Pre-selects product when navigating to create batch screen
+- **Section 3: Recent Batches**
+  - Production history (last 10 batches by default)
+  - Shows status (completed/failed/in_progress) with color-coded chips
+  - Displays yield percentage for completed batches
+  - Color-coded yield indicators (green: ≥90%, yellow: 70-89%, red: <70%)
+- Pull-to-refresh support
+- Floating action button to start new production batch
+
+**Create Production Batch Screen** ([create_production_batch_screen.dart:11](frontend/lib/screens/create_production_batch_screen.dart#L11)):
+- Product selection dropdown (finished products only)
+- Optional recipe template selection (filtered by selected product)
+- Pre-fills batch size and ingredient quantities from template
+- Shows recipe description when template selected
+- Ingredient input section with all non-finished-product inventory items
+- Shows current stock availability for each ingredient
+- Storage location and notes fields
+- Validates batch size > 0 and at least one ingredient
+- Creates batch and consumes ingredients atomically
+
+**Complete Production Batch Screen** ([complete_production_batch_screen.dart](frontend/lib/screens/complete_production_batch_screen.dart)):
+- Shows batch details (batch number, product, expected size)
+- Actual yield input field
+- Quality notes (optional)
+- Calculates and displays yield percentage
+- Adds finished product to inventory on completion
+- Automatically updates production time and yield metrics
 
 **Suppliers Screen:**
 - Lists all suppliers with contact information
@@ -761,6 +1045,10 @@ linter:
 - `graphqlServiceProvider`: Service layer for GraphQL operations
 - `inventoryItemsProvider`: Async provider for inventory items list
 - `suppliersProvider`: Async provider for suppliers list
+- `activeBatchesProvider`: Async provider for in-progress production batches
+- `productionHistoryProvider`: Async provider for production history (accepts productInventoryId and limit)
+- `finishedProductsProvider`: Async provider for finished products (category='finished_product')
+- `recipeTemplatesProvider`: Async provider for active recipe templates
 
 **Code Generation:**
 Run `dart run build_runner build --delete-conflicting-outputs` after modifying:
@@ -779,6 +1067,32 @@ Run `dart run build_runner build --delete-conflicting-outputs` after modifying:
 - `hasCoordinates` helper to check if supplier can be shown on map
 - Parses BigDecimal coordinates from GraphQL
 
+**ProductionBatch** (`frontend/lib/models/production_batch.dart`):
+- Full production batch lifecycle tracking
+- Status field: 'in_progress', 'completed', 'failed'
+- Yield metrics: actual_yield, yield_percentage, production_time_hours
+- Links to product and optional recipe template
+
+**RecipeTemplate** (`frontend/lib/models/recipe_template.dart`):
+- Template name, description, instructions
+- Default batch size and estimated duration
+- JSONB ingredient_template with ingredient ratios
+- Links to product inventory item
+
+### Implemented Features ✅
+
+- ✅ Full inventory management with stock status indicators
+- ✅ Supplier management with geographic coordinates
+- ✅ Production batch system (create, complete, fail)
+- ✅ Recipe templates with ingredient ratios
+- ✅ "What Can I Make?" feature for finished products
+- ✅ Production history with yield tracking
+- ✅ Adaptive navigation (mobile/desktop)
+- ✅ Platform-aware GraphQL client
+- ✅ Stock consumption and production output tracking
+- ✅ Automatic batch numbering
+- ✅ Yield percentage calculation
+
 ### Next Steps / Planned Features
 
 - [ ] Add map view for suppliers using `flutter_map` or `google_maps_flutter`
@@ -786,9 +1100,12 @@ Run `dart run build_runner build --delete-conflicting-outputs` after modifying:
 - [ ] Add filtering/sorting for inventory items
 - [ ] Search functionality
 - [ ] Detail screens for inventory items and suppliers
-- [ ] Add/edit inventory items and suppliers (CRUD operations)
+- [ ] Add/edit inventory items and suppliers (CREATE/UPDATE operations)
 - [ ] Purchase recording UI (uses existing `createPurchase` mutation)
+- [ ] View production batch details (ingredients used, timeline)
+- [ ] Recipe template management UI (create, edit, delete)
 - [ ] Low stock notifications/badges
 - [ ] Dark mode refinements
 - [ ] Offline support with local caching
+- [ ] Production reminders system (table exists, feature removed from app)
 
