@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -282,7 +284,9 @@ class _RecipeTemplateFormScreenState
                   children: [
                     // Product Selection
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedProductId,
+                      value: products.any((p) => p.id == _selectedProductId)
+                          ? _selectedProductId
+                          : null,
                       decoration: const InputDecoration(
                         labelText: 'Product *',
                         border: OutlineInputBorder(),
@@ -419,7 +423,10 @@ class _RecipeTemplateFormScreenState
                                 const SizedBox(height: 8),
                                 // Ingredient Dropdown
                                 DropdownButtonFormField<String>(
-                                  initialValue: ingredient.inventoryId,
+                                  value: ingredientItems.any(
+                                          (i) => i.id == ingredient.inventoryId)
+                                      ? ingredient.inventoryId
+                                      : null,
                                   decoration: const InputDecoration(
                                     labelText: 'Item',
                                     border: OutlineInputBorder(),
