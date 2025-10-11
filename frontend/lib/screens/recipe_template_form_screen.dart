@@ -122,21 +122,65 @@ class _RecipeTemplateFormScreenState
       return;
     }
 
-    // Validate at least one ingredient
-    final validIngredients = _ingredients.where((i) =>
-        i.inventoryId != null &&
-        i.quantityController.text.isNotEmpty &&
-        i.unit != null);
-
-    if (validIngredients.isEmpty) {
+    // Validate ingredients with detailed error messages
+    if (_ingredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please add at least one ingredient'),
-          backgroundColor: Colors.orange,
+          content: Text('❌ Please add at least one ingredient'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
         ),
       );
       return;
     }
+
+    // Check each ingredient for completeness
+    final List<String> errors = [];
+    for (int i = 0; i < _ingredients.length; i++) {
+      final ingredient = _ingredients[i];
+      final ingredientNum = i + 1;
+
+      if (ingredient.inventoryId == null) {
+        errors.add('Ingredient $ingredientNum: Select an item');
+      }
+      if (ingredient.quantityController.text.isEmpty) {
+        errors.add('Ingredient $ingredientNum: Enter quantity');
+      }
+      if (ingredient.unit == null || ingredient.unit!.isEmpty) {
+        errors.add('Ingredient $ingredientNum: Enter unit');
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '❌ Please complete all ingredient fields:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              ...errors.map((error) => Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 2),
+                    child: Text('• $error'),
+                  )),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
+    final validIngredients = _ingredients.where((i) =>
+        i.inventoryId != null &&
+        i.quantityController.text.isNotEmpty &&
+        i.unit != null &&
+        i.unit!.isNotEmpty);
 
     setState(() {
       _isLoading = true;
@@ -271,6 +315,32 @@ class _RecipeTemplateFormScreenState
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    // Info Card explaining required fields
+                    Card(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Fields marked with * are required',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
                     // Product Selection (optional for intermediate/experimental recipes)
                     DropdownButtonFormField<String>(
                       value: products.any((p) => p.id == _selectedProductId)
@@ -370,9 +440,24 @@ class _RecipeTemplateFormScreenState
                     const SizedBox(height: 24),
 
                     // Ingredients Section
-                    Text(
-                      'Ingredients',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    Row(
+                      children: [
+                        Text(
+                          'Ingredients',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '*',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const Text(
+                      'At least one ingredient is required',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                     const SizedBox(height: 8),
 
@@ -413,7 +498,7 @@ class _RecipeTemplateFormScreenState
                                       ? ingredient.inventoryId
                                       : null,
                                   decoration: const InputDecoration(
-                                    labelText: 'Item',
+                                    labelText: 'Item *',
                                     border: OutlineInputBorder(),
                                   ),
                                   items: ingredientItems.map((item) {
@@ -443,7 +528,7 @@ class _RecipeTemplateFormScreenState
                                       child: TextFormField(
                                         controller: ingredient.quantityController,
                                         decoration: const InputDecoration(
-                                          labelText: 'Quantity per Batch',
+                                          labelText: 'Quantity per Batch *',
                                           hintText: 'e.g., 0.5',
                                           border: OutlineInputBorder(),
                                         ),
@@ -456,7 +541,7 @@ class _RecipeTemplateFormScreenState
                                       child: TextFormField(
                                         initialValue: ingredient.unit,
                                         decoration: const InputDecoration(
-                                          labelText: 'Unit',
+                                          labelText: 'Unit *',
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (value) {
