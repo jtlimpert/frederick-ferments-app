@@ -1,6 +1,7 @@
 class RecipeTemplate {
   final String id;
-  final String productInventoryId;
+  /// Optional product ID - null for intermediate/experimental recipes
+  final String? productInventoryId;
   final String templateName;
   final String? description;
   final double? defaultBatchSize;
@@ -14,7 +15,7 @@ class RecipeTemplate {
 
   RecipeTemplate({
     required this.id,
-    required this.productInventoryId,
+    this.productInventoryId,
     required this.templateName,
     this.description,
     this.defaultBatchSize,
@@ -30,7 +31,7 @@ class RecipeTemplate {
   factory RecipeTemplate.fromJson(Map<String, dynamic> json) {
     return RecipeTemplate(
       id: json['id'] as String,
-      productInventoryId: json['productInventoryId'] as String,
+      productInventoryId: json['productInventoryId'] as String?,
       templateName: json['templateName'] as String,
       description: json['description'] as String?,
       defaultBatchSize: json['defaultBatchSize'] != null
@@ -110,7 +111,8 @@ class IngredientTemplateItem {
 
 /// Input for creating a new recipe template
 class CreateRecipeTemplateInput {
-  final String productInventoryId;
+  /// Optional product ID - null for intermediate/experimental recipes
+  final String? productInventoryId;
   final String templateName;
   final String? description;
   final double? defaultBatchSize;
@@ -120,7 +122,7 @@ class CreateRecipeTemplateInput {
   final String? instructions;
 
   CreateRecipeTemplateInput({
-    required this.productInventoryId,
+    this.productInventoryId,
     required this.templateName,
     this.description,
     this.defaultBatchSize,
@@ -136,7 +138,7 @@ class CreateRecipeTemplateInput {
         : null;
 
     return {
-      'productInventoryId': productInventoryId,
+      if (productInventoryId != null) 'productInventoryId': productInventoryId,
       'templateName': templateName,
       if (description != null) 'description': description,
       if (defaultBatchSize != null) 'defaultBatchSize': defaultBatchSize,

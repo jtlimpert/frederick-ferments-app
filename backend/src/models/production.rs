@@ -109,11 +109,13 @@ pub struct ProductionBatchResult {
 /// Represents a recipe template for repeatable production processes.
 ///
 /// Recipe templates define the standard process for making a product,
-/// including ingredient ratios.
+/// including ingredient ratios. Can be used for intermediate steps (no product)
+/// or experimental recipes.
 #[derive(Debug, Clone, FromRow, SimpleObject, Serialize, Deserialize)]
 pub struct RecipeTemplate {
     pub id: Uuid,
-    pub product_inventory_id: Uuid,
+    /// Optional product ID - null for intermediate/experimental recipes
+    pub product_inventory_id: Option<Uuid>,
     pub template_name: String,
     pub description: Option<String>,
     pub default_batch_size: Option<BigDecimal>,
@@ -131,8 +133,8 @@ pub struct RecipeTemplate {
 /// Input for creating a new recipe template.
 #[derive(Debug, InputObject)]
 pub struct CreateRecipeTemplateInput {
-    /// ID of the product this recipe creates
-    pub product_inventory_id: Uuid,
+    /// Optional ID of the product this recipe creates (null for intermediate/experimental recipes)
+    pub product_inventory_id: Option<Uuid>,
     /// Name of the recipe template
     pub template_name: String,
     /// Optional description of the recipe

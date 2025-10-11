@@ -51,7 +51,7 @@ CREATE TABLE inventory_logs (
 -- Recipe templates table (must be created before production_batches due to foreign key)
 CREATE TABLE recipe_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_inventory_id UUID NOT NULL REFERENCES inventory(id),
+    product_inventory_id UUID REFERENCES inventory(id),  -- Made nullable for intermediate/experimental recipes
     template_name VARCHAR(255) NOT NULL,
     description TEXT,
     default_batch_size DECIMAL(10,3),
@@ -111,7 +111,7 @@ CREATE INDEX idx_production_batches_status_active ON production_batches(status, 
     WHERE status IN ('in_progress');
 CREATE INDEX idx_production_batch_ingredients_batch ON production_batch_ingredients(batch_id);
 CREATE INDEX idx_production_batch_ingredients_ingredient ON production_batch_ingredients(ingredient_inventory_id);
-CREATE INDEX idx_recipe_templates_product ON recipe_templates(product_inventory_id);
+CREATE INDEX idx_recipe_templates_product ON recipe_templates(product_inventory_id) WHERE product_inventory_id IS NOT NULL;
 CREATE INDEX idx_recipe_templates_active ON recipe_templates(is_active) WHERE is_active = true;
 
 -- ============================================================================

@@ -961,20 +961,22 @@ impl MutationRoot {
         let pool = ctx.data::<PgPool>()?;
         let mut tx = pool.begin().await?;
 
-        // Validate product exists and is active
-        let product = sqlx::query!(
-            r#"SELECT id, name FROM inventory WHERE id = $1 AND is_active = true"#,
-            input.product_inventory_id
-        )
-        .fetch_optional(&mut *tx)
-        .await?;
+        // Validate product exists and is active (if product_inventory_id is provided)
+        if let Some(product_id) = input.product_inventory_id {
+            let product = sqlx::query!(
+                r#"SELECT id, name FROM inventory WHERE id = $1 AND is_active = true"#,
+                product_id
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
 
-        if product.is_none() {
-            return Ok(RecipeTemplateResult {
-                success: false,
-                message: "Product not found or is inactive".to_string(),
-                recipe: None,
-            });
+            if product.is_none() {
+                return Ok(RecipeTemplateResult {
+                    success: false,
+                    message: "Product not found or is inactive".to_string(),
+                    recipe: None,
+                });
+            }
         }
 
         // Insert new recipe template

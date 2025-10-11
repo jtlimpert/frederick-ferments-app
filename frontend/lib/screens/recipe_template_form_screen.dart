@@ -258,18 +258,7 @@ class _RecipeTemplateFormScreenState
       ),
       body: finishedProductsAsync.when(
         data: (products) {
-          if (products.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No finished products available.\nAdd items with category "finished_product" in inventory.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
-
+          // Note: We continue even if products.isEmpty since recipes can be product-less
           return inventoryItemsAsync.when(
             data: (allItems) {
               // Filter out finished products from ingredient list
@@ -282,13 +271,14 @@ class _RecipeTemplateFormScreenState
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    // Product Selection
+                    // Product Selection (optional for intermediate/experimental recipes)
                     DropdownButtonFormField<String>(
                       value: products.any((p) => p.id == _selectedProductId)
                           ? _selectedProductId
                           : null,
                       decoration: const InputDecoration(
-                        labelText: 'Product *',
+                        labelText: 'Product (optional)',
+                        helperText: 'Leave empty for intermediate/experimental recipes',
                         border: OutlineInputBorder(),
                       ),
                       items: products.map((product) {
@@ -302,12 +292,7 @@ class _RecipeTemplateFormScreenState
                           _selectedProductId = value;
                         });
                       },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a product';
-                        }
-                        return null;
-                      },
+                      // No validator - product is now optional
                     ),
                     const SizedBox(height: 16),
 
