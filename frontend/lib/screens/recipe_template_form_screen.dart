@@ -231,7 +231,7 @@ class _RecipeTemplateFormScreenState
         // Create new recipe
         result = await service.createRecipeTemplate(
           CreateRecipeTemplateInput(
-            productInventoryId: _selectedProductId!,
+            productInventoryId: _selectedProductId, // Now optional, no ! operator
             templateName: _templateNameController.text.trim(),
             description: _descriptionController.text.trim().isEmpty
                 ? null
