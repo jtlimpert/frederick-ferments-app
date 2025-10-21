@@ -8,7 +8,11 @@ CREATE TABLE suppliers (
     name VARCHAR NOT NULL,
     contact_email VARCHAR,
     contact_phone VARCHAR,
-    address TEXT,
+    street_address VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(2),
+    zip_code VARCHAR(10),
+    country VARCHAR(100) DEFAULT 'USA',
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     notes TEXT,
@@ -97,6 +101,55 @@ CREATE TABLE production_batch_ingredients (
     notes TEXT
 );
 
+-- Customers table
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    street_address VARCHAR(255),
+    city VARCHAR(100),
+    state VARCHAR(2),
+    zip_code VARCHAR(10),
+    country VARCHAR(100) DEFAULT 'USA',
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
+    customer_type VARCHAR(50) DEFAULT 'retail',
+    tax_exempt BOOLEAN DEFAULT false,
+    notes TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Sales table
+CREATE TABLE sales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sale_number VARCHAR(100) NOT NULL UNIQUE,
+    customer_id UUID REFERENCES customers(id),
+    sale_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    subtotal DECIMAL(10,2) NOT NULL,
+    tax_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50),
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'completed',
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Sale items table
+CREATE TABLE sale_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+    inventory_id UUID NOT NULL REFERENCES inventory(id),
+    quantity DECIMAL(10,3) NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    line_total DECIMAL(10,2) NOT NULL,
+    notes TEXT
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_inventory_active ON inventory(is_active);
 CREATE INDEX idx_inventory_category ON inventory(category);
@@ -113,65 +166,17 @@ CREATE INDEX idx_production_batch_ingredients_batch ON production_batch_ingredie
 CREATE INDEX idx_production_batch_ingredients_ingredient ON production_batch_ingredients(ingredient_inventory_id);
 CREATE INDEX idx_recipe_templates_product ON recipe_templates(product_inventory_id) WHERE product_inventory_id IS NOT NULL;
 CREATE INDEX idx_recipe_templates_active ON recipe_templates(is_active) WHERE is_active = true;
+CREATE INDEX idx_customers_name ON customers(name);
+CREATE INDEX idx_customers_email ON customers(email);
+CREATE INDEX idx_customers_active ON customers(is_active);
+CREATE INDEX idx_sales_date ON sales(sale_date DESC);
+CREATE INDEX idx_sales_customer ON sales(customer_id);
+CREATE INDEX idx_sales_status ON sales(payment_status);
+CREATE INDEX idx_sale_items_sale ON sale_items(sale_id);
+CREATE INDEX idx_sale_items_inventory ON sale_items(inventory_id);
 
 -- ============================================================================
--- Sample Data Inserts
+-- Ready for your data!
 -- ============================================================================
-
--- Insert sample suppliers
--- Coordinates are for fictional locations in the Frederick, MD area
-INSERT INTO suppliers (name, contact_email, contact_phone, address, latitude, longitude) VALUES
-    ('Local Farm Supply', 'orders@localfarmsupply.com', '555-0123', '123 Farm Road, Frederick, MD 21701', 39.41427, -77.41054),
-    ('Organic Ingredients Co', 'sales@organicingredients.com', '555-0456', '456 Market Street, Frederick, MD 21702', 39.43562, -77.43821),
-    ('Valley Grains & More', 'info@valleygrains.com', '555-0789', '789 Valley Pike, Frederick, MD 21703', 39.38291, -77.38109);
-
--- Insert sample inventory items
-INSERT INTO inventory (name, category, unit, current_stock, reorder_point, cost_per_unit) VALUES
-    ('Organic Wheat Flour', 'Grains', 'lbs', 50.0, 10.0, 2.50),
-    ('Sea Salt', 'Seasonings', 'lbs', 25.0, 5.0, 1.25),
-    ('Active Dry Yeast', 'Fermentation', 'oz', 100.0, 20.0, 0.15),
-    ('Bread Flour', 'Flour', 'kg', 50.0, 10.0, 2.50),
-    ('Whole Wheat Flour', 'Flour', 'kg', 30.0, 10.0, 3.00),
-    ('Rye Flour', 'Flour', 'kg', 20.0, 5.0, 3.50),
-    ('Sourdough Starter', 'Starter', 'kg', 3.0, 0.5, 0.00),
-    ('Honey', 'Sweeteners', 'kg', 8.0, 2.0, 8.50),
-    ('Olive Oil', 'Oils', 'L', 12.0, 3.0, 15.00),
-    ('Filtered Water', 'Liquids', 'L', 100.0, 20.0, 0.00),
-    ('Sesame Seeds', 'Toppings', 'kg', 4.0, 1.0, 6.00),
-    ('Sourdough Bread', 'finished_product', 'loaves', 0.0, 5.0, NULL);
-
--- Insert sample recipe template for Sourdough Bread with ingredient template
-INSERT INTO recipe_templates (
-  product_inventory_id,
-  template_name,
-  description,
-  default_batch_size,
-  default_unit,
-  estimated_duration_hours,
-  ingredient_template
-)
-SELECT
-  prod.id,
-  'Basic Sourdough Bread',
-  'Traditional sourdough bread with autolyse and multiple folds',
-  2.0,
-  'loaves',
-  18.0,
-  jsonb_build_object(
-    'ingredients', jsonb_agg(
-      jsonb_build_object(
-        'inventory_id', ing.id,
-        'quantity_per_batch', ing.qty,
-        'unit', ing.unit
-      )
-    )
-  )
-FROM inventory prod,
-LATERAL (VALUES
-  ((SELECT id FROM inventory WHERE name = 'Bread Flour'), 0.5, 'kg'),
-  ((SELECT id FROM inventory WHERE name = 'Filtered Water'), 0.35, 'L'),
-  ((SELECT id FROM inventory WHERE name = 'Sourdough Starter'), 0.1, 'kg'),
-  ((SELECT id FROM inventory WHERE name = 'Sea Salt'), 0.01, 'lbs')
-) AS ing(id, qty, unit)
-WHERE prod.name = 'Sourdough Bread'
-GROUP BY prod.id;
+-- Database is initialized with schema and indexes only.
+-- No sample data included - start fresh!

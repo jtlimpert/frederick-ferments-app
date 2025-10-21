@@ -99,7 +99,7 @@ final class GraphqlServiceProvider
   }
 }
 
-String _$graphqlServiceHash() => r'23872dc59ecd96512ef705fa04ac4022756f4d4b';
+String _$graphqlServiceHash() => r'37c829a2bec0c52a5dd30806074d0822cad3bf54';
 
 /// Service for interacting with the Frederick Ferments GraphQL API.
 ///
@@ -361,3 +361,170 @@ final class RecipeTemplatesProvider
 }
 
 String _$recipeTemplatesHash() => r'0e50e49c4655944f9562b77cead69bc655af83e7';
+
+/// Riverpod provider for customers.
+
+@ProviderFor(customers)
+const customersProvider = CustomersProvider._();
+
+/// Riverpod provider for customers.
+
+final class CustomersProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Customer>>,
+          List<Customer>,
+          FutureOr<List<Customer>>
+        >
+    with $FutureModifier<List<Customer>>, $FutureProvider<List<Customer>> {
+  /// Riverpod provider for customers.
+  const CustomersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'customersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$customersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Customer>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Customer>> create(Ref ref) {
+    return customers(ref);
+  }
+}
+
+String _$customersHash() => r'4a19ca41e9e6489ed209b7e195efbf1998961b20';
+
+/// Riverpod provider for sales.
+
+@ProviderFor(sales)
+const salesProvider = SalesFamily._();
+
+/// Riverpod provider for sales.
+
+final class SalesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Sale>>,
+          List<Sale>,
+          FutureOr<List<Sale>>
+        >
+    with $FutureModifier<List<Sale>>, $FutureProvider<List<Sale>> {
+  /// Riverpod provider for sales.
+  const SalesProvider._({
+    required SalesFamily super.from,
+    required ({
+      String? customerId,
+      DateTime? startDate,
+      DateTime? endDate,
+      int limit,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'salesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$salesHash();
+
+  @override
+  String toString() {
+    return r'salesProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Sale>> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Sale>> create(Ref ref) {
+    final argument =
+        this.argument
+            as ({
+              String? customerId,
+              DateTime? startDate,
+              DateTime? endDate,
+              int limit,
+            });
+    return sales(
+      ref,
+      customerId: argument.customerId,
+      startDate: argument.startDate,
+      endDate: argument.endDate,
+      limit: argument.limit,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SalesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$salesHash() => r'e587b9f1f56c1aad3460c7667f07535ba00816d0';
+
+/// Riverpod provider for sales.
+
+final class SalesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<Sale>>,
+          ({
+            String? customerId,
+            DateTime? startDate,
+            DateTime? endDate,
+            int limit,
+          })
+        > {
+  const SalesFamily._()
+    : super(
+        retry: null,
+        name: r'salesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Riverpod provider for sales.
+
+  SalesProvider call({
+    String? customerId,
+    DateTime? startDate,
+    DateTime? endDate,
+    int limit = 50,
+  }) => SalesProvider._(
+    argument: (
+      customerId: customerId,
+      startDate: startDate,
+      endDate: endDate,
+      limit: limit,
+    ),
+    from: this,
+  );
+
+  @override
+  String toString() => r'salesProvider';
+}

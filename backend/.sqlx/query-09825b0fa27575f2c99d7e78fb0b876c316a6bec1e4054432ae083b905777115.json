@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO sales (\n                sale_number, customer_id, sale_date,\n                subtotal, tax_amount, discount_amount, total_amount,\n                payment_method, payment_status, notes\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid",
+        "Timestamptz",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Numeric",
+        "Varchar",
+        "Varchar",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "09825b0fa27575f2c99d7e78fb0b876c316a6bec1e4054432ae083b905777115"
+}

@@ -3,7 +3,10 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 
-use crate::models::{InventoryItem, ProductionBatch, RecipeTemplate, Supplier};
+use crate::models::{
+    Customer, InventoryItem, ProductionBatch, RecipeTemplate, Sale, SaleItem, SaleWithItems,
+    Supplier,
+};
 
 pub struct QueryRoot;
 
@@ -249,5 +252,196 @@ impl QueryRoot {
         .await?;
 
         Ok(template)
+    }
+
+    /// Get all active customers
+    async fn customers(&self, ctx: &Context<'_>) -> Result<Vec<Customer>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let customers = sqlx::query_as!(
+            Customer,
+            r#"
+            SELECT
+                id, name, email, phone,
+                street_address, city, state, zip_code, country,
+                latitude, longitude,
+                customer_type,
+                tax_exempt as "tax_exempt!",
+                notes,
+                is_active as "is_active!",
+                created_at, updated_at
+            FROM customers
+            WHERE is_active = true
+            ORDER BY name
+            "#
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(customers)
+    }
+
+    /// Get a specific customer by ID
+    async fn customer(&self, ctx: &Context<'_>, id: uuid::Uuid) -> Result<Option<Customer>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        let customer = sqlx::query_as!(
+            Customer,
+            r#"
+            SELECT
+                id, name, email, phone,
+                street_address, city, state, zip_code, country,
+                latitude, longitude,
+                customer_type,
+                tax_exempt as "tax_exempt!",
+                notes,
+                is_active as "is_active!",
+                created_at, updated_at
+            FROM customers
+            WHERE id = $1
+            "#,
+            id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(customer)
+    }
+
+    /// Get sales with optional filters
+    async fn sales(
+        &self,
+        ctx: &Context<'_>,
+        customer_id: Option<uuid::Uuid>,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+        limit: Option<i32>,
+    ) -> Result<Vec<Sale>> {
+        let pool = ctx.data::<PgPool>()?;
+        let limit = limit.unwrap_or(50).min(500); // Default 50, max 500
+
+        let sales = if let Some(customer_id) = customer_id {
+            sqlx::query_as!(
+                Sale,
+                r#"
+                SELECT
+                    id, sale_number, customer_id, sale_date,
+                    subtotal, tax_amount, discount_amount, total_amount,
+                    payment_method, payment_status, notes,
+                    created_at, updated_at
+                FROM sales
+                WHERE customer_id = $1
+                    AND ($2::timestamptz IS NULL OR sale_date >= $2)
+                    AND ($3::timestamptz IS NULL OR sale_date <= $3)
+                ORDER BY sale_date DESC
+                LIMIT $4
+                "#,
+                customer_id,
+                start_date,
+                end_date,
+                limit as i64
+            )
+            .fetch_all(pool)
+            .await?
+        } else {
+            sqlx::query_as!(
+                Sale,
+                r#"
+                SELECT
+                    id, sale_number, customer_id, sale_date,
+                    subtotal, tax_amount, discount_amount, total_amount,
+                    payment_method, payment_status, notes,
+                    created_at, updated_at
+                FROM sales
+                WHERE ($1::timestamptz IS NULL OR sale_date >= $1)
+                    AND ($2::timestamptz IS NULL OR sale_date <= $2)
+                ORDER BY sale_date DESC
+                LIMIT $3
+                "#,
+                start_date,
+                end_date,
+                limit as i64
+            )
+            .fetch_all(pool)
+            .await?
+        };
+
+        Ok(sales)
+    }
+
+    /// Get full sale details including items and customer
+    async fn sale_details(
+        &self,
+        ctx: &Context<'_>,
+        sale_id: uuid::Uuid,
+    ) -> Result<Option<SaleWithItems>> {
+        let pool = ctx.data::<PgPool>()?;
+
+        // Fetch the sale
+        let sale = sqlx::query_as!(
+            Sale,
+            r#"
+            SELECT
+                id, sale_number, customer_id, sale_date,
+                subtotal, tax_amount, discount_amount, total_amount,
+                payment_method, payment_status, notes,
+                created_at, updated_at
+            FROM sales
+            WHERE id = $1
+            "#,
+            sale_id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        let Some(sale) = sale else {
+            return Ok(None);
+        };
+
+        // Fetch sale items
+        let items = sqlx::query_as!(
+            SaleItem,
+            r#"
+            SELECT
+                id, sale_id, inventory_id, quantity,
+                unit_price, line_total, notes
+            FROM sale_items
+            WHERE sale_id = $1
+            "#,
+            sale_id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        // Fetch customer if exists
+        let customer = if let Some(customer_id) = sale.customer_id {
+            sqlx::query_as!(
+                Customer,
+                r#"
+                SELECT
+                    id, name, email, phone,
+                    street_address, city, state, zip_code, country,
+                    latitude, longitude,
+                    customer_type,
+                    tax_exempt as "tax_exempt!",
+                    notes,
+                    is_active as "is_active!",
+                    created_at, updated_at
+                FROM customers
+                WHERE id = $1
+                "#,
+                customer_id
+            )
+            .fetch_optional(pool)
+            .await?
+        } else {
+            None
+        };
+
+        Ok(Some(SaleWithItems {
+            sale,
+            items,
+            customer,
+        }))
     }
 }

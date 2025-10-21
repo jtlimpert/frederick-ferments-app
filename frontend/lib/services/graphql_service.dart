@@ -5,10 +5,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../models/customer.dart';
 import '../models/inventory_item.dart';
 import '../models/production_batch.dart';
 import '../models/purchase.dart';
 import '../models/recipe_template.dart';
+import '../models/sale.dart';
 import '../models/supplier.dart';
 
 part 'graphql_service.g.dart';
@@ -1239,6 +1241,406 @@ class GraphqlService extends _$GraphqlService {
       rethrow;
     }
   }
+
+  // =========================================================================
+  // Customer Methods
+  // =========================================================================
+
+  /// Fetches all active customers from the API.
+  Future<List<Customer>> getCustomers() async {
+    const query = '''
+      query GetCustomers {
+        customers {
+          id
+          name
+          email
+          phone
+          streetAddress
+          city
+          state
+          zipCode
+          country
+          latitude
+          longitude
+          customerType
+          taxExempt
+          notes
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    ''';
+
+    try {
+      final result = await _client.query(QueryOptions(document: gql(query)));
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to fetch customers',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final customers = result.data?['customers'] as List<dynamic>? ?? [];
+      return customers
+          .map((customer) => Customer.fromJson(customer as Map<String, dynamic>))
+          .toList();
+    } catch (e, s) {
+      developer.log(
+        'Error in getCustomers',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Creates a new customer.
+  Future<Map<String, dynamic>> createCustomer(CreateCustomerInput input) async {
+    const mutation = '''
+      mutation CreateCustomer(\$input: CreateCustomerInput!) {
+        createCustomer(input: \$input) {
+          success
+          message
+          customer {
+            id
+            name
+            email
+            phone
+            streetAddress
+            city
+            state
+            zipCode
+            country
+            latitude
+            longitude
+            customerType
+            taxExempt
+            notes
+            isActive
+            createdAt
+            updatedAt
+          }
+        }
+      }
+    ''';
+
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to create customer',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final customerData =
+          result.data?['createCustomer'] as Map<String, dynamic>?;
+      if (customerData == null) {
+        throw Exception('No data returned from createCustomer mutation');
+      }
+
+      return customerData;
+    } catch (e, s) {
+      developer.log(
+        'Error in createCustomer',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Updates an existing customer.
+  Future<Map<String, dynamic>> updateCustomer(UpdateCustomerInput input) async {
+    const mutation = '''
+      mutation UpdateCustomer(\$input: UpdateCustomerInput!) {
+        updateCustomer(input: \$input) {
+          success
+          message
+          customer {
+            id
+            name
+            email
+            phone
+            streetAddress
+            city
+            state
+            zipCode
+            country
+            latitude
+            longitude
+            customerType
+            taxExempt
+            notes
+            isActive
+            createdAt
+            updatedAt
+          }
+        }
+      }
+    ''';
+
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to update customer',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final customerData =
+          result.data?['updateCustomer'] as Map<String, dynamic>?;
+      if (customerData == null) {
+        throw Exception('No data returned from updateCustomer mutation');
+      }
+
+      return customerData;
+    } catch (e, s) {
+      developer.log(
+        'Error in updateCustomer',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  // =========================================================================
+  // Sales Methods
+  // =========================================================================
+
+  /// Fetches sales with optional filters.
+  Future<List<Sale>> getSales({
+    String? customerId,
+    DateTime? startDate,
+    DateTime? endDate,
+    int limit = 50,
+  }) async {
+    const query = '''
+      query GetSales(\$customerId: UUID, \$startDate: DateTime, \$endDate: DateTime, \$limit: Int) {
+        sales(customerId: \$customerId, startDate: \$startDate, endDate: \$endDate, limit: \$limit) {
+          id
+          saleNumber
+          customerId
+          saleDate
+          subtotal
+          taxAmount
+          discountAmount
+          totalAmount
+          paymentMethod
+          paymentStatus
+          notes
+          createdAt
+          updatedAt
+        }
+      }
+    ''';
+
+    try {
+      final result = await _client.query(
+        QueryOptions(
+          document: gql(query),
+          variables: {
+            if (customerId != null) 'customerId': customerId,
+            if (startDate != null) 'startDate': startDate.toIso8601String(),
+            if (endDate != null) 'endDate': endDate.toIso8601String(),
+            'limit': limit,
+          },
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to fetch sales',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final sales = result.data?['sales'] as List<dynamic>? ?? [];
+      return sales
+          .map((sale) => Sale.fromJson(sale as Map<String, dynamic>))
+          .toList();
+    } catch (e, s) {
+      developer.log(
+        'Error in getSales',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Fetches full sale details including items and customer.
+  Future<SaleWithItems?> getSaleDetails(String saleId) async {
+    const query = '''
+      query GetSaleDetails(\$saleId: UUID!) {
+        saleDetails(saleId: \$saleId) {
+          sale {
+            id
+            saleNumber
+            customerId
+            saleDate
+            subtotal
+            taxAmount
+            discountAmount
+            totalAmount
+            paymentMethod
+            paymentStatus
+            notes
+            createdAt
+            updatedAt
+          }
+          items {
+            id
+            saleId
+            inventoryId
+            quantity
+            unitPrice
+            lineTotal
+            notes
+          }
+          customer {
+            id
+            name
+            email
+            phone
+            streetAddress
+            city
+            state
+            zipCode
+            country
+            customerType
+            taxExempt
+          }
+        }
+      }
+    ''';
+
+    try {
+      final result = await _client.query(
+        QueryOptions(
+          document: gql(query),
+          variables: {'saleId': saleId},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to fetch sale details',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final saleDetailsData = result.data?['saleDetails'] as Map<String, dynamic>?;
+      if (saleDetailsData == null) {
+        return null;
+      }
+
+      return SaleWithItems.fromJson(saleDetailsData);
+    } catch (e, s) {
+      developer.log(
+        'Error in getSaleDetails',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
+
+  /// Creates a new sale.
+  Future<Map<String, dynamic>> createSale(CreateSaleInput input) async {
+    const mutation = '''
+      mutation CreateSale(\$input: CreateSaleInput!) {
+        createSale(input: \$input) {
+          success
+          message
+          saleId
+          saleNumber
+          updatedItems {
+            id
+            name
+            currentStock
+            availableStock
+          }
+        }
+      }
+    ''';
+
+    try {
+      final result = await _client.mutate(
+        MutationOptions(
+          document: gql(mutation),
+          variables: {'input': input.toJson()},
+        ),
+      );
+
+      if (result.hasException) {
+        developer.log(
+          'Failed to create sale',
+          name: 'graphql_service',
+          level: 1000,
+          error: result.exception,
+        );
+        throw Exception(result.exception.toString());
+      }
+
+      final saleData = result.data?['createSale'] as Map<String, dynamic>?;
+      if (saleData == null) {
+        throw Exception('No data returned from createSale mutation');
+      }
+
+      return saleData;
+    } catch (e, s) {
+      developer.log(
+        'Error in createSale',
+        name: 'graphql_service',
+        level: 1000,
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
+  }
 }
 
 /// Riverpod provider for active production batches.
@@ -1275,4 +1677,29 @@ Future<List<InventoryItem>> finishedProducts(Ref ref) async {
 Future<List<RecipeTemplate>> recipeTemplates(Ref ref) async {
   final service = ref.watch(graphqlServiceProvider.notifier);
   return service.getRecipeTemplates();
+}
+
+/// Riverpod provider for customers.
+@riverpod
+Future<List<Customer>> customers(Ref ref) async {
+  final service = ref.watch(graphqlServiceProvider.notifier);
+  return service.getCustomers();
+}
+
+/// Riverpod provider for sales.
+@riverpod
+Future<List<Sale>> sales(
+  Ref ref, {
+  String? customerId,
+  DateTime? startDate,
+  DateTime? endDate,
+  int limit = 50,
+}) async {
+  final service = ref.watch(graphqlServiceProvider.notifier);
+  return service.getSales(
+    customerId: customerId,
+    startDate: startDate,
+    endDate: endDate,
+    limit: limit,
+  );
 }

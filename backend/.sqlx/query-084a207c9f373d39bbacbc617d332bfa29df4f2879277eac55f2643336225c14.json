@@ -1,0 +1,97 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT\n                    id, sale_number, customer_id, sale_date,\n                    subtotal, tax_amount, discount_amount, total_amount,\n                    payment_method, payment_status, notes,\n                    created_at, updated_at\n                FROM sales\n                WHERE customer_id = $1\n                    AND ($2::timestamptz IS NULL OR sale_date >= $2)\n                    AND ($3::timestamptz IS NULL OR sale_date <= $3)\n                ORDER BY sale_date DESC\n                LIMIT $4\n                ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "sale_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "customer_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "sale_date",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "subtotal",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 5,
+        "name": "tax_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 6,
+        "name": "discount_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 7,
+        "name": "total_amount",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 8,
+        "name": "payment_method",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "payment_status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "084a207c9f373d39bbacbc617d332bfa29df4f2879277eac55f2643336225c14"
+}

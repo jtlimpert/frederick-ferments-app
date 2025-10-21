@@ -4,12 +4,13 @@ use chrono::Utc;
 use sqlx::PgPool;
 
 use crate::models::{
-    CompleteProductionBatchInput, CreateInventoryItemInput, CreateProductionBatchInput,
-    CreatePurchaseInput, CreateRecipeTemplateInput, CreateSupplierInput, DeleteInventoryItemInput,
+    CompleteProductionBatchInput, CreateCustomerInput, CreateInventoryItemInput,
+    CreateProductionBatchInput, CreatePurchaseInput, CreateRecipeTemplateInput, CreateSaleInput,
+    CreateSupplierInput, Customer, CustomerResult, DeleteInventoryItemInput,
     DeleteRecipeTemplateInput, DeleteResult, FailProductionBatchInput, InventoryItem,
     InventoryItemResult, ProductionBatchResult, PurchaseResult, RecipeTemplate,
-    RecipeTemplateResult, Supplier, SupplierResult, UpdateInventoryItemInput,
-    UpdateRecipeTemplateInput, UpdateSupplierInput,
+    RecipeTemplateResult, SaleResult, Supplier, SupplierResult, UpdateCustomerInput,
+    UpdateInventoryItemInput, UpdateRecipeTemplateInput, UpdateSupplierInput,
 };
 
 pub struct MutationRoot;
@@ -1163,6 +1164,339 @@ impl MutationRoot {
         Ok(DeleteResult {
             success: true,
             message: format!("Successfully deleted recipe '{}'", recipe.template_name),
+        })
+    }
+
+    /// Create a new customer
+    async fn create_customer(
+        &self,
+        ctx: &Context<'_>,
+        input: CreateCustomerInput,
+    ) -> Result<CustomerResult> {
+        let pool = ctx.data::<PgPool>()?;
+
+        // Extract boolean with default
+        let tax_exempt = input.tax_exempt.unwrap_or(false);
+
+        let customer = sqlx::query_as!(
+            Customer,
+            r#"
+            INSERT INTO customers (
+                name, email, phone,
+                street_address, city, state, zip_code, country,
+                latitude, longitude,
+                customer_type, tax_exempt, notes
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING
+                id, name, email, phone,
+                street_address, city, state, zip_code, country,
+                latitude, longitude,
+                customer_type,
+                tax_exempt as "tax_exempt!",
+                notes,
+                is_active as "is_active!",
+                created_at, updated_at
+            "#,
+            input.name,
+            input.email,
+            input.phone,
+            input.street_address,
+            input.city,
+            input.state,
+            input.zip_code,
+            input.country,
+            input.latitude,
+            input.longitude,
+            input.customer_type,
+            tax_exempt,
+            input.notes
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(CustomerResult {
+            success: true,
+            message: format!("Successfully created customer '{}'", customer.name),
+            customer: Some(customer),
+        })
+    }
+
+    /// Update an existing customer
+    async fn update_customer(
+        &self,
+        ctx: &Context<'_>,
+        input: UpdateCustomerInput,
+    ) -> Result<CustomerResult> {
+        let pool = ctx.data::<PgPool>()?;
+
+        // Fetch the existing customer to ensure it exists
+        let existing = sqlx::query!("SELECT id FROM customers WHERE id = $1", input.id)
+            .fetch_optional(pool)
+            .await?;
+
+        if existing.is_none() {
+            return Ok(CustomerResult {
+                success: false,
+                message: "Customer not found".to_string(),
+                customer: None,
+            });
+        }
+
+        // Handle optional boolean fields
+        let tax_exempt = input.tax_exempt;
+        let is_active = input.is_active;
+
+        // Build dynamic UPDATE query based on provided fields
+        let customer = sqlx::query_as!(
+            Customer,
+            r#"
+            UPDATE customers SET
+                name = COALESCE($2, name),
+                email = COALESCE($3, email),
+                phone = COALESCE($4, phone),
+                street_address = COALESCE($5, street_address),
+                city = COALESCE($6, city),
+                state = COALESCE($7, state),
+                zip_code = COALESCE($8, zip_code),
+                country = COALESCE($9, country),
+                latitude = COALESCE($10, latitude),
+                longitude = COALESCE($11, longitude),
+                customer_type = COALESCE($12, customer_type),
+                tax_exempt = COALESCE($13::boolean, tax_exempt),
+                notes = COALESCE($14, notes),
+                is_active = COALESCE($15::boolean, is_active),
+                updated_at = NOW()
+            WHERE id = $1
+            RETURNING
+                id, name, email, phone,
+                street_address, city, state, zip_code, country,
+                latitude, longitude,
+                customer_type,
+                tax_exempt as "tax_exempt!",
+                notes,
+                is_active as "is_active!",
+                created_at, updated_at
+            "#,
+            input.id,
+            input.name,
+            input.email,
+            input.phone,
+            input.street_address,
+            input.city,
+            input.state,
+            input.zip_code,
+            input.country,
+            input.latitude,
+            input.longitude,
+            input.customer_type,
+            tax_exempt,
+            input.notes,
+            is_active
+        )
+        .fetch_one(pool)
+        .await?;
+
+        Ok(CustomerResult {
+            success: true,
+            message: format!("Successfully updated customer '{}'", customer.name),
+            customer: Some(customer),
+        })
+    }
+
+    /// Create a new sale and update inventory
+    async fn create_sale(&self, ctx: &Context<'_>, input: CreateSaleInput) -> Result<SaleResult> {
+        let pool = ctx.data::<PgPool>()?;
+        let mut tx = pool.begin().await?;
+
+        let sale_date = input.sale_date.unwrap_or_else(Utc::now);
+
+        // Validate inputs
+        if input.items.is_empty() {
+            return Ok(SaleResult {
+                success: false,
+                message: "At least one item is required".to_string(),
+                sale_id: None,
+                sale_number: None,
+                updated_items: Vec::new(),
+            });
+        }
+
+        // Validate all items have sufficient stock before processing
+        for item_input in &input.items {
+            if item_input.quantity <= BigDecimal::from(0) {
+                return Ok(SaleResult {
+                    success: false,
+                    message: "Quantity must be greater than 0".to_string(),
+                    sale_id: None,
+                    sale_number: None,
+                    updated_items: Vec::new(),
+                });
+            }
+
+            // Check stock availability
+            let inventory = sqlx::query!(
+                "SELECT current_stock FROM inventory WHERE id = $1",
+                item_input.inventory_id
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
+
+            let Some(inventory) = inventory else {
+                return Ok(SaleResult {
+                    success: false,
+                    message: format!("Inventory item not found: {}", item_input.inventory_id),
+                    sale_id: None,
+                    sale_number: None,
+                    updated_items: Vec::new(),
+                });
+            };
+
+            if inventory.current_stock < item_input.quantity {
+                return Ok(SaleResult {
+                    success: false,
+                    message: format!(
+                        "Insufficient stock for item {}. Available: {}, Requested: {}",
+                        item_input.inventory_id, inventory.current_stock, item_input.quantity
+                    ),
+                    sale_id: None,
+                    sale_number: None,
+                    updated_items: Vec::new(),
+                });
+            }
+        }
+
+        // Calculate totals
+        let subtotal: BigDecimal = input
+            .items
+            .iter()
+            .map(|item| &item.quantity * &item.unit_price)
+            .sum();
+        let tax_amount = input.tax_amount.unwrap_or_else(|| BigDecimal::from(0));
+        let discount_amount = input.discount_amount.unwrap_or_else(|| BigDecimal::from(0));
+        let total_amount = &subtotal + &tax_amount - &discount_amount;
+
+        // Generate unique sale number (SALE-YYYYMMDD-NNN)
+        let date_str = sale_date.format("%Y%m%d").to_string();
+        let count = sqlx::query!(
+            "SELECT COUNT(*) as count FROM sales WHERE sale_number LIKE $1",
+            format!("SALE-{}-%%%", date_str)
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        let sale_number = format!("SALE-{}-{:03}", date_str, count.count.unwrap_or(0) + 1);
+
+        // Create sale record
+        let sale_id = sqlx::query_scalar!(
+            r#"
+            INSERT INTO sales (
+                sale_number, customer_id, sale_date,
+                subtotal, tax_amount, discount_amount, total_amount,
+                payment_method, payment_status, notes
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            RETURNING id
+            "#,
+            sale_number,
+            input.customer_id,
+            sale_date,
+            subtotal,
+            tax_amount,
+            discount_amount,
+            total_amount,
+            input.payment_method,
+            input
+                .payment_status
+                .unwrap_or_else(|| "completed".to_string()),
+            input.notes
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+
+        let mut updated_items = Vec::new();
+
+        // Process each sale item
+        for item_input in input.items {
+            let line_total = &item_input.quantity * &item_input.unit_price;
+
+            // Insert sale item
+            sqlx::query!(
+                r#"
+                INSERT INTO sale_items (
+                    sale_id, inventory_id, quantity, unit_price, line_total, notes
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+                "#,
+                sale_id,
+                item_input.inventory_id,
+                item_input.quantity,
+                item_input.unit_price,
+                line_total,
+                item_input.notes
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            // Update inventory (decrement stock)
+            let updated_item = sqlx::query_as!(
+                InventoryItem,
+                r#"
+                UPDATE inventory
+                SET
+                    current_stock = current_stock - $1,
+                    updated_at = $2
+                WHERE id = $3
+                RETURNING
+                    id,
+                    name,
+                    category,
+                    unit,
+                    current_stock as "current_stock!: BigDecimal",
+                    reserved_stock as "reserved_stock!: BigDecimal",
+                    available_stock as "available_stock!: BigDecimal",
+                    reorder_point as "reorder_point!: BigDecimal",
+                    cost_per_unit as "cost_per_unit?: BigDecimal",
+                    default_supplier_id,
+                    shelf_life_days,
+                    storage_requirements,
+                    is_active,
+                    created_at,
+                    updated_at
+                "#,
+                item_input.quantity,
+                sale_date,
+                item_input.inventory_id
+            )
+            .fetch_one(&mut *tx)
+            .await?;
+
+            // Log the sale in inventory_logs
+            sqlx::query!(
+                r#"
+                INSERT INTO inventory_logs (
+                    inventory_id, movement_type, quantity, unit_cost, reason, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6)
+                "#,
+                item_input.inventory_id,
+                "sale",
+                -item_input.quantity, // Negative for stock reduction
+                item_input.unit_price,
+                format!("Sale {}", sale_number),
+                sale_date
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            updated_items.push(updated_item);
+        }
+
+        // Commit the transaction
+        tx.commit().await?;
+
+        Ok(SaleResult {
+            success: true,
+            message: format!("Successfully created sale {}", sale_number),
+            sale_id: Some(sale_id),
+            sale_number: Some(sale_number),
+            updated_items,
         })
     }
 }
