@@ -13,25 +13,37 @@ Frederick Ferments is a fermentation business inventory management system built 
 - **Deployment**: Docker Compose setup with health checks
 - **Runtime**: Tokio async runtime
 
-The system tracks inventory items with fields for stock levels, reorder points, suppliers (with geographic coordinates), purchase history, and production batches. The GraphQL API provides queries for inventory, suppliers, production batches, and recipe templates, with mutations for purchases, production batch management, and inventory deletion. The Flutter frontend provides adaptive UI (bottom navigation for mobile, side rail for web/desktop) with three main screens: Inventory, Production, and Suppliers.
+The system tracks inventory items with fields for stock levels, reorder points, suppliers (with geographic coordinates), purchase history, and production batches. The GraphQL API provides queries for inventory, suppliers, production batches, and recipe templates, with mutations for full CRUD operations on inventory items, suppliers, and recipe templates, as well as purchases and production batch management. The Flutter frontend provides adaptive UI (bottom navigation for mobile, side rail for web/desktop) with four main screens: Inventory, Production, Recipes, and Suppliers.
 
 ### Key Components
 
 **Backend Structure:**
 - `backend/src/main.rs`: Main server entry point with GraphQL schema setup and connection pooling (max 10 connections)
-- `backend/src/models/inventory.rs`: Core data models (InventoryItem, Supplier, ProductionBatch, RecipeTemplate, Purchase/Production inputs/outputs)
-- `backend/src/resolvers/query.rs`: GraphQL query resolvers (inventory_items, suppliers, active_batches, production_history, recipe_templates, health_check, ping)
-- `backend/src/resolvers/mutation.rs`: GraphQL mutation resolvers (create_purchase, create_production_batch, complete_production_batch, fail_production_batch, delete_inventory_item)
+- `backend/src/models/inventory.rs`: Core data models (InventoryItem, Supplier, inputs/outputs for CRUD operations)
+- `backend/src/models/production.rs`: Production data models (ProductionBatch, RecipeTemplate, inputs/outputs)
+- `backend/src/resolvers/query.rs`: GraphQL query resolvers (inventory_items, suppliers, active_batches, production_history, recipe_templates, recipe_template, health_check, ping)
+- `backend/src/resolvers/mutation.rs`: GraphQL mutation resolvers (1,168 lines):
+  - Inventory: create_inventory_item, update_inventory_item, delete_inventory_item
+  - Suppliers: create_supplier, update_supplier
+  - Recipe Templates: create_recipe_template, update_recipe_template, delete_recipe_template
+  - Production: create_production_batch, complete_production_batch, fail_production_batch
+  - Purchases: create_purchase
 - `backend/Cargo.toml`: Dependencies configuration
+- `migrations/`: Database migration files
 
 **Frontend Structure:**
 - `frontend/lib/main.dart`: App entry point with theme configuration
-- `frontend/lib/screens/home_screen.dart`: Adaptive navigation wrapper (3 tabs: Inventory, Production, Suppliers)
-- `frontend/lib/screens/inventory_list_screen.dart`: Inventory list with stock status indicators
+- `frontend/lib/screens/home_screen.dart`: Adaptive navigation wrapper (4 tabs: Inventory, Production, Recipes, Suppliers)
+- `frontend/lib/screens/inventory_list_screen.dart`: Inventory list with stock status indicators and CRUD actions
+- `frontend/lib/screens/inventory_item_form_screen.dart`: Create/edit inventory items
 - `frontend/lib/screens/production_screen.dart`: Production management (active batches, "what can I make?", history)
 - `frontend/lib/screens/create_production_batch_screen.dart`: Create new production batch with recipe template support
 - `frontend/lib/screens/complete_production_batch_screen.dart`: Complete batch with yield tracking
-- `frontend/lib/screens/suppliers_screen.dart`: Suppliers list view (map view planned)
+- `frontend/lib/screens/create_purchase_screen.dart`: Record purchases from suppliers
+- `frontend/lib/screens/recipes_screen.dart`: Recipe templates list with CRUD actions
+- `frontend/lib/screens/recipe_template_form_screen.dart`: Create/edit recipe templates with ingredient management
+- `frontend/lib/screens/suppliers_screen.dart`: Suppliers list with CRUD actions
+- `frontend/lib/screens/supplier_form_screen.dart`: Create/edit suppliers with structured address fields
 - `frontend/lib/models/`: Data models (InventoryItem, Supplier, ProductionBatch, RecipeTemplate, Purchase)
 - `frontend/lib/services/`: GraphQL service and Riverpod providers
 - `frontend/lib/widgets/`: Reusable UI components (InventoryItemCard)
@@ -85,7 +97,7 @@ The system tracks inventory items with fields for stock levels, reorder points, 
 
 4. **recipe_templates** (UUID primary key)
    - `id`: UUID (auto-generated)
-   - `product_inventory_id`: UUID (foreign key to inventory, NOT NULL)
+   - `product_inventory_id`: UUID (foreign key to inventory, **nullable**) - Optional link to finished product; allows experimental/intermediate recipes
    - `template_name`: VARCHAR(255) (NOT NULL)
    - `description`: TEXT (nullable)
    - `default_batch_size`: DECIMAL(10,3) (nullable)
@@ -332,7 +344,7 @@ pub struct ProductionBatch {
 // Recipe template
 pub struct RecipeTemplate {
     pub id: Uuid,
-    pub product_inventory_id: Uuid,
+    pub product_inventory_id: Option<Uuid>,  // Optional - supports experimental/intermediate recipes
     pub template_name: String,
     pub description: Option<String>,
     pub default_batch_size: Option<BigDecimal>,
@@ -685,13 +697,216 @@ mutation {
 }
 ```
 
-**Deletion Flow** (`backend/src/resolvers/mutation.rs:497-562`):
+**Deletion Flow** (`backend/src/resolvers/mutation.rs:713-779`):
 1. Validates item exists
 2. Checks for active production batches using this item as ingredient
 3. If active batches exist, returns error (prevents deletion)
 4. Hard deletes item from inventory table
 5. Cascading deletes handle related records
 6. Commits transaction
+
+**6. Create Inventory Item** (`backend/src/resolvers/mutation.rs:498`)
+```graphql
+mutation {
+  createInventoryItem(input: {
+    name: "Organic Wheat Flour"
+    category: "ingredient"
+    unit: "kg"
+    reorderPoint: 10.0
+    costPerUnit: 2.50
+    defaultSupplierId: "uuid-here"  # Optional
+    shelfLifeDays: 180              # Optional
+    storageRequirements: "Cool, dry place"  # Optional
+  }) {
+    success
+    message
+    item {
+      id
+      name
+      category
+      currentStock
+    }
+  }
+}
+```
+- Creates new inventory item with initial stock of 0
+- All fields except name, category, and unit are optional
+- Returns created item on success
+
+**7. Update Inventory Item** (`backend/src/resolvers/mutation.rs:591`)
+```graphql
+mutation {
+  updateInventoryItem(input: {
+    inventoryId: "uuid-here"
+    name: "Premium Wheat Flour"     # Optional
+    category: "ingredient"          # Optional
+    reorderPoint: 15.0              # Optional
+    costPerUnit: 3.00               # Optional
+    defaultSupplierId: "uuid-here"  # Optional
+    shelfLifeDays: 180              # Optional
+    storageRequirements: "Cool, dry place"  # Optional
+  }) {
+    success
+    message
+    item {
+      id
+      name
+      costPerUnit
+      reorderPoint
+    }
+  }
+}
+```
+- Updates only provided fields (partial update)
+- Cannot update stock levels directly (use purchases/production)
+- Returns updated item on success
+
+**8. Create Supplier** (`backend/src/resolvers/mutation.rs:781`)
+```graphql
+mutation {
+  createSupplier(input: {
+    name: "Local Farm Co-op"
+    contactEmail: "orders@localfarm.coop"
+    contactPhone: "+1-555-0123"
+    streetAddress: "123 Farm Road"
+    city: "Frederick"
+    state: "MD"
+    zipCode: "21701"
+    country: "USA"
+    latitude: 39.4143
+    longitude: -77.4105
+    notes: "Organic certified, delivers Tuesday/Friday"
+  }) {
+    success
+    message
+    supplier {
+      id
+      name
+      contactEmail
+      city
+      state
+    }
+  }
+}
+```
+- Creates new supplier with structured address fields
+- All fields except name are optional
+- Latitude/longitude enable map display
+- Returns created supplier on success
+
+**9. Update Supplier** (`backend/src/resolvers/mutation.rs:851`)
+```graphql
+mutation {
+  updateSupplier(input: {
+    supplierId: "uuid-here"
+    name: "Local Farm Co-op & Market"  # Optional
+    contactEmail: "orders@localfarm.coop"  # Optional
+    contactPhone: "+1-555-0199"       # Optional
+    streetAddress: "456 New Location" # Optional
+    city: "Frederick"                 # Optional
+    state: "MD"                       # Optional
+    zipCode: "21702"                  # Optional
+    country: "USA"                    # Optional
+    latitude: 39.4200                 # Optional
+    longitude: -77.4200               # Optional
+    notes: "New location, same great service"  # Optional
+  }) {
+    success
+    message
+    supplier {
+      id
+      name
+      streetAddress
+      city
+    }
+  }
+}
+```
+- Updates only provided fields (partial update)
+- All fields except supplierId are optional
+- Returns updated supplier on success
+
+**10. Create Recipe Template** (`backend/src/resolvers/mutation.rs:955`)
+```graphql
+mutation {
+  createRecipeTemplate(input: {
+    productInventoryId: "uuid-here"  # Optional - supports experimental recipes
+    templateName: "Sourdough Bread - Basic"
+    description: "Traditional sourdough with long fermentation"
+    defaultBatchSize: 2.0
+    defaultUnit: "loaves"
+    estimatedDurationHours: 24.0
+    ingredientTemplate: {
+      ingredients: [
+        {
+          inventory_id: "flour-uuid"
+          quantity_per_batch: 1.0
+          unit: "kg"
+        },
+        {
+          inventory_id: "starter-uuid"
+          quantity_per_batch: 0.2
+          unit: "kg"
+        }
+      ]
+    }
+    instructions: "1. Mix ingredients\n2. Autolyse 30min\n3. Bulk ferment 12hrs..."
+  }) {
+    success
+    message
+    recipeTemplate {
+      id
+      templateName
+      productInventoryId
+    }
+  }
+}
+```
+- Creates new recipe template
+- productInventoryId is optional (supports experimental/intermediate recipes)
+- ingredientTemplate is JSONB format with ingredient ratios
+- Returns created template on success
+
+**11. Update Recipe Template** (`backend/src/resolvers/mutation.rs:1019`)
+```graphql
+mutation {
+  updateRecipeTemplate(input: {
+    recipeTemplateId: "uuid-here"
+    templateName: "Sourdough Bread - Improved"  # Optional
+    description: "Enhanced with better rise"     # Optional
+    defaultBatchSize: 3.0                        # Optional
+    defaultUnit: "loaves"                        # Optional
+    estimatedDurationHours: 20.0                 # Optional
+    ingredientTemplate: { ... }                  # Optional
+    instructions: "Updated instructions..."      # Optional
+  }) {
+    success
+    message
+    recipeTemplate {
+      id
+      templateName
+    }
+  }
+}
+```
+- Updates only provided fields (partial update)
+- All fields except recipeTemplateId are optional
+- Returns updated template on success
+
+**12. Delete Recipe Template** (`backend/src/resolvers/mutation.rs:1106`)
+```graphql
+mutation {
+  deleteRecipeTemplate(input: {
+    recipeTemplateId: "uuid-here"
+  }) {
+    success
+    message
+  }
+}
+```
+- Soft delete: sets is_active = false
+- Template remains in database but hidden from queries
+- Returns success status
 
 ## Environment Configuration
 
@@ -984,7 +1199,7 @@ linter:
 ### Current Features
 
 **Adaptive Navigation:**
-- **Mobile (< 640px width)**: Bottom navigation bar with 3 tabs (Inventory, Production, Suppliers)
+- **Mobile (< 640px width)**: Bottom navigation bar with 4 tabs (Inventory, Production, Recipes, Suppliers)
 - **Web/Desktop (≥ 640px width)**: Side navigation rail for better desktop UX
 - Automatically adapts based on screen width using `LayoutBuilder`
 
@@ -996,6 +1211,9 @@ linter:
   - 🔴 Red (critical): Stock at or below reorder point
 - Shows available stock, reserved stock, cost per unit, and category
 - Progress bars visualizing stock levels
+- Floating action button to add new inventory items
+- Edit/delete actions for each item
+- Record purchases from suppliers
 - Material 3 design with cards and elevation
 
 **Production Screen** ([production_screen.dart:14](frontend/lib/screens/production_screen.dart#L14)):
@@ -1036,11 +1254,48 @@ linter:
 - Adds finished product to inventory on completion
 - Automatically updates production time and yield metrics
 
+**Recipes Screen:**
+- Lists all active recipe templates with pull-to-refresh
+- Shows template name, description, and linked product (if any)
+- Displays default batch size and estimated duration
+- Floating action button to create new recipe templates
+- Edit/delete actions for each recipe template
+- Supports recipes without linked products (experimental/intermediate recipes)
+- Shows ingredient count and estimated duration at a glance
+
+**Recipe Template Form Screen:**
+- Create or edit recipe templates
+- Optional product selection (can be independent recipe)
+- Template name, description, and instructions fields
+- Default batch size and unit inputs
+- Estimated duration in hours
+- Ingredient management:
+  - Add/remove ingredients from inventory
+  - Specify quantity per batch for each ingredient
+  - Shows current stock availability
+- Form validation for required fields
+- Material 3 design with consistent styling
+
 **Suppliers Screen:**
-- Lists all suppliers with contact information
+- Lists all suppliers with pull-to-refresh
+- Shows contact information (email, phone)
+- Displays structured address fields (street, city, state, zip, country)
 - Shows geographic coordinates when available
 - Indicates suppliers with/without coordinates via icons
+- Floating action button to add new suppliers
+- Edit actions for each supplier
 - **Planned**: Map view with supplier pins (toggle between list/map)
+
+**Supplier Form Screen:**
+- Create or edit supplier information
+- Name and contact fields (email, phone)
+- Structured address inputs:
+  - Street address
+  - City, state, zip code
+  - Country (defaults to USA)
+- Geographic coordinates (latitude/longitude) for map display
+- Notes field for additional information
+- Form validation for required fields
 
 **Platform-Aware GraphQL Client:**
 - Automatically selects correct endpoint based on platform:
@@ -1087,35 +1342,42 @@ Run `dart run build_runner build --delete-conflicting-outputs` after modifying:
 - Template name, description, instructions
 - Default batch size and estimated duration
 - JSONB ingredient_template with ingredient ratios
-- Links to product inventory item
+- Optional link to product inventory item (supports experimental/intermediate recipes)
+- Includes CreateRecipeTemplateInput and UpdateRecipeTemplateInput classes
 
 ### Implemented Features ✅
 
 - ✅ Full inventory management with stock status indicators
-- ✅ Supplier management with geographic coordinates
+- ✅ Inventory CRUD operations (create, update, delete)
+- ✅ Supplier management with structured address fields and geographic coordinates
+- ✅ Supplier CRUD operations (create, update)
 - ✅ Production batch system (create, complete, fail)
-- ✅ Recipe templates with ingredient ratios
+- ✅ Recipe templates with ingredient ratios (independent of products)
+- ✅ Recipe template CRUD operations (create, update, delete/soft delete)
+- ✅ Purchase recording UI with supplier selection
 - ✅ "What Can I Make?" feature for finished products
 - ✅ Production history with yield tracking
-- ✅ Adaptive navigation (mobile/desktop)
+- ✅ Adaptive navigation (mobile/desktop) with 4 tabs
 - ✅ Platform-aware GraphQL client
 - ✅ Stock consumption and production output tracking
 - ✅ Automatic batch numbering
 - ✅ Yield percentage calculation
+- ✅ Database migrations system
 
 ### Next Steps / Planned Features
 
 - [ ] Add map view for suppliers using `flutter_map` or `google_maps_flutter`
 - [ ] Toggle between list/map view for suppliers
-- [ ] Add filtering/sorting for inventory items
-- [ ] Search functionality
-- [ ] Detail screens for inventory items and suppliers
-- [ ] Add/edit inventory items and suppliers (CREATE/UPDATE operations)
-- [ ] Purchase recording UI (uses existing `createPurchase` mutation)
-- [ ] View production batch details (ingredients used, timeline)
-- [ ] Recipe template management UI (create, edit, delete)
+- [ ] Add filtering/sorting for inventory items and recipes
+- [ ] Search functionality across all screens
+- [ ] Detail screens for inventory items, suppliers, and production batches
+- [ ] View production batch details (ingredients used, timeline, full history)
 - [ ] Low stock notifications/badges
 - [ ] Dark mode refinements
 - [ ] Offline support with local caching
+- [ ] Export data to CSV/Excel
+- [ ] Analytics dashboard (stock trends, production yields, cost analysis)
+- [ ] Barcode/QR code scanning for inventory
+- [ ] Multi-user support with authentication
 - [ ] Production reminders system (table exists, feature removed from app)
 
