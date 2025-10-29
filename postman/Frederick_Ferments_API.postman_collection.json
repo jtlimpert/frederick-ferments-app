@@ -1,0 +1,599 @@
+{
+  "info": {
+    "name": "Frederick Ferments API",
+    "description": "Complete GraphQL API collection for Frederick Ferments inventory management system. Includes queries and mutations for inventory, suppliers, production batches, and recipe templates.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query HealthCheck {\n  healthCheck {\n    status\n    timestamp\n    databaseConnected\n    version\n    uptimeSeconds\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}",
+              "host": ["{{api_url}}"]
+            },
+            "description": "Check API health status, database connectivity, and uptime"
+          }
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query Ping {\n  ping\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{api_url}}",
+              "host": ["{{api_url}}"]
+            },
+            "description": "Simple ping test that returns 'pong'"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Queries",
+      "item": [
+        {
+          "name": "Inventory",
+          "item": [
+            {
+              "name": "Get All Inventory Items",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query GetInventoryItems {\n  inventoryItems {\n    id\n    name\n    category\n    unit\n    currentStock\n    reservedStock\n    availableStock\n    reorderPoint\n    costPerUnit\n    defaultSupplierId\n    shelfLifeDays\n    storageRequirements\n    isActive\n    createdAt\n    updatedAt\n  }\n}",
+                    "variables": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Returns all active inventory items with complete details"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suppliers",
+          "item": [
+            {
+              "name": "Get All Suppliers",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query GetSuppliers {\n  suppliers {\n    id\n    name\n    contactEmail\n    contactPhone\n    streetAddress\n    city\n    state\n    zipCode\n    country\n    latitude\n    longitude\n    notes\n    createdAt\n    updatedAt\n  }\n}",
+                    "variables": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Returns all suppliers with contact info and location data"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Production",
+          "item": [
+            {
+              "name": "Get Active Batches",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query GetActiveBatches {\n  activeBatches {\n    id\n    batchNumber\n    productInventoryId\n    recipeTemplateId\n    batchSize\n    unit\n    startDate\n    estimatedCompletionDate\n    status\n    storageLocation\n    notes\n    createdAt\n  }\n}",
+                    "variables": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Returns all production batches with status 'in_progress'"
+              }
+            },
+            {
+              "name": "Get Production History",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query GetProductionHistory($productInventoryId: UUID, $limit: Int) {\n  productionHistory(productInventoryId: $productInventoryId, limit: $limit) {\n    id\n    batchNumber\n    productInventoryId\n    batchSize\n    unit\n    startDate\n    completionDate\n    status\n    yieldPercentage\n    actualYield\n    productionTimeHours\n    qualityNotes\n  }\n}",
+                    "variables": "{\n  \"limit\": 20\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Returns production history. Optional filter by productInventoryId and limit (default 50, max 500)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recipes",
+          "item": [
+            {
+              "name": "Get Recipe Templates",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "query GetRecipeTemplates {\n  recipeTemplates {\n    id\n    productInventoryId\n    templateName\n    description\n    defaultBatchSize\n    defaultUnit\n    estimatedDurationHours\n    ingredientTemplate\n    instructions\n    isActive\n    createdAt\n    updatedAt\n  }\n}",
+                    "variables": ""
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Returns all active recipe templates with ingredient ratios and instructions"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mutations",
+      "item": [
+        {
+          "name": "Inventory Management",
+          "item": [
+            {
+              "name": "Create Inventory Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreateInventoryItem($input: CreateInventoryItemInput!) {\n  createInventoryItem(input: $input) {\n    success\n    message\n    item {\n      id\n      name\n      category\n      unit\n      currentStock\n      reorderPoint\n      costPerUnit\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"name\": \"Organic Wheat Flour\",\n    \"category\": \"ingredient\",\n    \"unit\": \"kg\",\n    \"reorderPoint\": 10.0,\n    \"costPerUnit\": 2.50,\n    \"shelfLifeDays\": 180,\n    \"storageRequirements\": \"Cool, dry place\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Creates a new inventory item with initial stock of 0"
+              }
+            },
+            {
+              "name": "Update Inventory Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation UpdateInventoryItem($input: UpdateInventoryItemInput!) {\n  updateInventoryItem(input: $input) {\n    success\n    message\n    item {\n      id\n      name\n      category\n      reorderPoint\n      costPerUnit\n      shelfLifeDays\n      storageRequirements\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"inventoryId\": \"{{inventory_item_id}}\",\n    \"name\": \"Premium Wheat Flour\",\n    \"reorderPoint\": 15.0,\n    \"costPerUnit\": 3.00\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Updates inventory item fields (partial update). Cannot update stock levels directly."
+              }
+            },
+            {
+              "name": "Delete Inventory Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation DeleteInventoryItem($input: DeleteInventoryItemInput!) {\n  deleteInventoryItem(input: $input) {\n    success\n    message\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"inventoryId\": \"{{inventory_item_id}}\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Hard deletes an inventory item. Fails if item is used in active production batches."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Supplier Management",
+          "item": [
+            {
+              "name": "Create Supplier",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreateSupplier($input: CreateSupplierInput!) {\n  createSupplier(input: $input) {\n    success\n    message\n    supplier {\n      id\n      name\n      contactEmail\n      contactPhone\n      streetAddress\n      city\n      state\n      zipCode\n      country\n      latitude\n      longitude\n      notes\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"name\": \"Local Farm Co-op\",\n    \"contactEmail\": \"orders@localfarm.coop\",\n    \"contactPhone\": \"+1-555-0123\",\n    \"streetAddress\": \"123 Farm Road\",\n    \"city\": \"Frederick\",\n    \"state\": \"MD\",\n    \"zipCode\": \"21701\",\n    \"country\": \"USA\",\n    \"latitude\": 39.4143,\n    \"longitude\": -77.4105,\n    \"notes\": \"Organic certified, delivers Tuesday/Friday\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Creates a new supplier with contact info and location data"
+              }
+            },
+            {
+              "name": "Update Supplier",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation UpdateSupplier($input: UpdateSupplierInput!) {\n  updateSupplier(input: $input) {\n    success\n    message\n    supplier {\n      id\n      name\n      contactEmail\n      contactPhone\n      streetAddress\n      city\n      state\n      zipCode\n      notes\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"supplierId\": \"{{supplier_id}}\",\n    \"contactPhone\": \"+1-555-0199\",\n    \"notes\": \"Updated delivery schedule\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Updates supplier information (partial update)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Purchase Management",
+          "item": [
+            {
+              "name": "Create Purchase",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreatePurchase($input: CreatePurchaseInput!) {\n  createPurchase(input: $input) {\n    success\n    message\n    updatedItems {\n      id\n      name\n      currentStock\n      availableStock\n      costPerUnit\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"supplierId\": \"{{supplier_id}}\",\n    \"purchaseDate\": \"2025-10-29T12:00:00Z\",\n    \"notes\": \"Monthly restock\",\n    \"items\": [\n      {\n        \"inventoryId\": \"{{inventory_item_id}}\",\n        \"quantity\": 50.0,\n        \"unitCost\": 2.75,\n        \"expiryDate\": \"2025-12-31\",\n        \"batchNumber\": \"BATCH-2025-001\"\n      }\n    ]\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Records a purchase transaction. Updates stock levels and cost per unit atomically."
+              }
+            },
+            {
+              "name": "Create Multi-Item Purchase",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreatePurchase($input: CreatePurchaseInput!) {\n  createPurchase(input: $input) {\n    success\n    message\n    updatedItems {\n      id\n      name\n      currentStock\n      costPerUnit\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"supplierId\": \"{{supplier_id}}\",\n    \"items\": [\n      {\n        \"inventoryId\": \"uuid-1\",\n        \"quantity\": 25.0,\n        \"unitCost\": 2.50\n      },\n      {\n        \"inventoryId\": \"uuid-2\",\n        \"quantity\": 10.0,\n        \"unitCost\": 5.00\n      },\n      {\n        \"inventoryId\": \"uuid-3\",\n        \"quantity\": 100.0,\n        \"unitCost\": 0.50\n      }\n    ]\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Example of purchasing multiple items in a single transaction"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Production Management",
+          "item": [
+            {
+              "name": "Create Production Batch",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreateProductionBatch($input: CreateProductionBatchInput!) {\n  createProductionBatch(input: $input) {\n    success\n    message\n    batchId\n    batchNumber\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"productInventoryId\": \"{{inventory_item_id}}\",\n    \"recipeTemplateId\": \"{{recipe_template_id}}\",\n    \"batchSize\": 2.0,\n    \"unit\": \"loaves\",\n    \"estimatedCompletionDate\": \"2025-10-31T12:00:00Z\",\n    \"storageLocation\": \"Fridge #2\",\n    \"notes\": \"Using starter from last week\",\n    \"ingredients\": [\n      {\n        \"inventoryId\": \"uuid-flour\",\n        \"quantityUsed\": 1.0\n      },\n      {\n        \"inventoryId\": \"uuid-starter\",\n        \"quantityUsed\": 0.2\n      }\n    ]\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Starts a new production batch. Consumes ingredients and generates batch number."
+              }
+            },
+            {
+              "name": "Complete Production Batch",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CompleteProductionBatch($input: CompleteProductionBatchInput!) {\n  completeProductionBatch(input: $input) {\n    success\n    message\n    batchId\n    batchNumber\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"batchId\": \"{{batch_id}}\",\n    \"actualYield\": 1.8,\n    \"qualityNotes\": \"Perfect rise! Great texture.\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Completes a production batch. Adds finished product to inventory and calculates yield metrics."
+              }
+            },
+            {
+              "name": "Fail Production Batch",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation FailProductionBatch($input: FailProductionBatchInput!) {\n  failProductionBatch(input: $input) {\n    success\n    message\n    batchId\n    batchNumber\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"batchId\": \"{{batch_id}}\",\n    \"reason\": \"Starter wasn't active, no rise after 12 hours\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Marks a production batch as failed. Does NOT refund ingredients."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recipe Management",
+          "item": [
+            {
+              "name": "Create Recipe Template",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreateRecipeTemplate($input: CreateRecipeTemplateInput!) {\n  createRecipeTemplate(input: $input) {\n    success\n    message\n    recipeTemplate {\n      id\n      templateName\n      productInventoryId\n      defaultBatchSize\n      defaultUnit\n      ingredientTemplate\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"productInventoryId\": \"{{inventory_item_id}}\",\n    \"templateName\": \"Sourdough Bread - Basic\",\n    \"description\": \"Traditional sourdough with long fermentation\",\n    \"defaultBatchSize\": 2.0,\n    \"defaultUnit\": \"loaves\",\n    \"estimatedDurationHours\": 24.0,\n    \"ingredientTemplate\": {\n      \"ingredients\": [\n        {\n          \"inventory_id\": \"uuid-flour\",\n          \"quantity_per_batch\": 1.0,\n          \"unit\": \"kg\"\n        },\n        {\n          \"inventory_id\": \"uuid-starter\",\n          \"quantity_per_batch\": 0.2,\n          \"unit\": \"kg\"\n        }\n      ]\n    },\n    \"instructions\": \"1. Mix ingredients\\n2. Autolyse 30min\\n3. Bulk ferment 12hrs\\n4. Shape and proof 4hrs\\n5. Bake at 450°F for 35min\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Creates a new recipe template with ingredient ratios. productInventoryId is optional."
+              }
+            },
+            {
+              "name": "Create Recipe (No Product Link)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation CreateRecipeTemplate($input: CreateRecipeTemplateInput!) {\n  createRecipeTemplate(input: $input) {\n    success\n    message\n    recipeTemplate {\n      id\n      templateName\n      description\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"templateName\": \"Experimental Ferment Mix\",\n    \"description\": \"Testing new fermentation ratios\",\n    \"defaultBatchSize\": 1.0,\n    \"defaultUnit\": \"batch\",\n    \"estimatedDurationHours\": 48.0,\n    \"instructions\": \"Experimental recipe for testing purposes\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Example of creating a recipe template without linking to a specific product (for experimental/intermediate recipes)"
+              }
+            },
+            {
+              "name": "Update Recipe Template",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation UpdateRecipeTemplate($input: UpdateRecipeTemplateInput!) {\n  updateRecipeTemplate(input: $input) {\n    success\n    message\n    recipeTemplate {\n      id\n      templateName\n      description\n      defaultBatchSize\n    }\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"recipeTemplateId\": \"{{recipe_template_id}}\",\n    \"templateName\": \"Sourdough Bread - Improved\",\n    \"description\": \"Enhanced with better rise\",\n    \"defaultBatchSize\": 3.0,\n    \"estimatedDurationHours\": 20.0\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Updates recipe template fields (partial update)"
+              }
+            },
+            {
+              "name": "Delete Recipe Template",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "graphql",
+                  "graphql": {
+                    "query": "mutation DeleteRecipeTemplate($input: DeleteRecipeTemplateInput!) {\n  deleteRecipeTemplate(input: $input) {\n    success\n    message\n  }\n}",
+                    "variables": "{\n  \"input\": {\n    \"recipeTemplateId\": \"{{recipe_template_id}}\"\n  }\n}"
+                  }
+                },
+                "url": {
+                  "raw": "{{api_url}}",
+                  "host": ["{{api_url}}"]
+                },
+                "description": "Soft deletes a recipe template (sets is_active = false)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Example Workflows",
+      "item": [
+        {
+          "name": "Complete Workflow: Create Product & Recipe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "# Step 1: Create finished product\nmutation {\n  createInventoryItem(input: {\n    name: \"Sourdough Bread\"\n    category: \"finished_product\"\n    unit: \"loaves\"\n    reorderPoint: 5.0\n  }) {\n    success\n    item { id }\n  }\n}\n\n# Step 2: Create ingredients (flour, starter)\n# Step 3: Create recipe template linking product and ingredients\n# Step 4: Create production batch using recipe\n# Step 5: Complete batch and add to inventory"
+            },
+            "url": {
+              "raw": "{{api_url}}",
+              "host": ["{{api_url}}"]
+            },
+            "description": "Example workflow showing the full process from product creation to production"
+          }
+        }
+      ]
+    }
+  ]
+}
