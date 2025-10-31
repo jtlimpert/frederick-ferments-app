@@ -68,7 +68,7 @@ fi
 echo ""
 echo "✨ Development environment is ready!"
 echo "   📊 GraphQL API: http://localhost:4000/graphql"
-echo "   🗄️  Database: localhost:5432"
+echo "   🗄️  Database: localhost:5433"
 echo ""
 echo "View logs: docker-compose logs -f"
 echo "Stop all: docker-compose down"

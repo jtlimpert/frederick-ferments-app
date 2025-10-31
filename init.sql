@@ -176,7 +176,120 @@ CREATE INDEX idx_sale_items_sale ON sale_items(sale_id);
 CREATE INDEX idx_sale_items_inventory ON sale_items(inventory_id);
 
 -- ============================================================================
--- Ready for your data!
+-- Sample Test Data
 -- ============================================================================
--- Database is initialized with schema and indexes only.
--- No sample data included - start fresh!
+
+-- Insert suppliers
+INSERT INTO suppliers (id, name, contact_email, contact_phone, street_address, city, state, zip_code, country, latitude, longitude, notes, created_at, updated_at) VALUES
+('75bf2f4b-d30d-4258-8b62-2937525a714f', 'Walmart', '', '', '2421 Monocacy Blvd,', 'Frederick', 'MD', '21701', 'USA', 39.449001, -77.386978, '', NOW(), NOW()),
+('f0444eba-2b22-4ece-8303-f29764611009', 'Home Garden', '', '', '8 Fairview Ave', 'Frederick', 'MD', '21701', 'USA', 39.416313, -77.431301, '', NOW(), NOW());
+
+-- Insert inventory items
+INSERT INTO inventory (id, name, category, unit, current_stock, reserved_stock, reorder_point, cost_per_unit, default_supplier_id, shelf_life_days, storage_requirements, is_active, created_at, updated_at) VALUES
+('fc8bc8a3-c8cf-4f05-b141-732aef691d63', 'Cabbage', 'Vegetable', 'grams', 0, 0, 100, NULL, '75bf2f4b-d30d-4258-8b62-2937525a714f', 14, 'Store in fridge', true, NOW(), NOW()),
+('201721bd-29a3-4fd9-9b55-528e85838eba', 'Salt', 'minerial', 'grams', 0, 0, 20, NULL, '75bf2f4b-d30d-4258-8b62-2937525a714f', NULL, 'Keep dry', true, NOW(), NOW()),
+('d7c62dd3-a545-44e1-81b6-4bbea8b9c8d5', 'Dill', 'Herb', 'grams', 0, 0, 10, NULL, 'f0444eba-2b22-4ece-8303-f29764611009', 14, 'Store in fridge', true, NOW(), NOW()),
+('fa3a419d-8331-496f-8c25-a7dba9ac70fe', 'Garlic', 'Herb', 'grams', 0, 0, 10, NULL, 'f0444eba-2b22-4ece-8303-f29764611009', 265, 'Keep dry', true, NOW(), NOW()),
+('999026a6-1941-44cd-9b27-119ad21e699a', 'Garlic Dill Sauerkraut', 'finished_product', 'grams', 0, 0, 100, NULL, NULL, NULL, '', true, NOW(), NOW());
+
+-- Insert recipe templates
+INSERT INTO recipe_templates (id, product_inventory_id, template_name, description, default_batch_size, default_unit, estimated_duration_hours, ingredient_template, instructions, is_active, created_at, updated_at) VALUES
+('42feebfc-6dd4-41f2-9cf7-be9e5d8a185f', '999026a6-1941-44cd-9b27-119ad21e699a', 'Garlic Dill Sauerkraut', 'This is sauerkraut with garlic and dill', 1000.000, 'grams', 672.00,
+'{"ingredients": [{"unit": "grams", "inventory_id": "fc8bc8a3-c8cf-4f05-b141-732aef691d63", "quantity_per_batch": 1000}, {"unit": "grams", "inventory_id": "201721bd-29a3-4fd9-9b55-528e85838eba", "quantity_per_batch": 20}, {"unit": "grams", "inventory_id": "d7c62dd3-a545-44e1-81b6-4bbea8b9c8d5", "quantity_per_batch": 5}, {"unit": "grams", "inventory_id": "fa3a419d-8331-496f-8c25-a7dba9ac70fe", "quantity_per_batch": 10}]}'::jsonb,
+'Part 1: Roast the Garlic (Do This First)
+Total Time: ~40 minutes + cooling
+
+Gather Ingredients (5 minutes)
+
+Collect 4 garlic cloves (leave unpeeled)
+
+
+Roast (35 minutes)
+
+Preheat oven to 400°F (204°C)
+Place unpeeled garlic cloves on parchment paper
+Roast for 35 minutes
+
+
+Rest (until cool)
+
+Remove from oven
+Let cool completely until safe to handle
+
+
+Prepare for Use
+
+Once cooled, squeeze out the roasted garlic from the peels
+Set aside for mixing with cabbage
+
+
+
+
+Part 2: Make the Sauerkraut
+Total Time: 30 minutes active + 28 days fermentation
+Start Time: 9:00 AM
+
+Step 1: Prepare Cabbage (9:00 AM - 10 minutes)
+
+Clean the cabbage
+Slice cabbage into thin strips
+Important: Weigh the usable cabbage and record the weight
+Note: You need this weight to calculate the correct salt amount
+
+
+Step 2: Prepare Fresh Dill (9:10 AM - 5 minutes)
+
+Rinse the fresh dill
+Chop into small pieces
+Set aside in a clean bowl
+
+
+Step 3: Combine Ingredients and Massage (9:15 AM - 10 minutes)
+
+Place sliced cabbage in a large mixing bowl
+Add the roasted garlic (squeeze out from peels)
+Add chopped fresh dill
+Add salt
+Important: Use 2% of the cabbage weight in salt
+Example: For 1000g cabbage, use 20g salt
+
+
+Begin massaging the mixture:
+
+Use clean hands to squeeze and massage the cabbage
+Continue for about 10 minutes
+Goal: Break down the cabbage and release its natural juices
+
+
+
+Step 4: Pack into Jar (9:25 AM - 5 minutes)
+
+Transfer the cabbage mixture into a clean glass jar
+Pack it down firmly with your fist or a clean utensil
+Push out air pockets as you pack
+Ensure the cabbage is submerged under its own liquid
+Note: If liquid doesn''t cover the cabbage after packing, wait 24 hours for more juice to release
+
+
+Step 5: Fermentation (9:30 AM - 28 days)
+
+Cover the jar loosely (gas needs to escape)
+Place jar on a plate (to catch any overflow)
+Store at room temperature (65-75°F / 18-24°C)
+Keep out of direct sunlight
+
+
+Daily Maintenance:
+
+Check daily for the first week
+Press down cabbage if it rises above the liquid
+Taste after 7 days, then every few days
+Fermentation is complete when it reaches your desired tanginess (usually 3-4 weeks)
+
+
+Completion:
+
+When fermentation is complete, seal jar tightly
+Transfer to refrigerator for long-term storage
+Will keep for several months refrigerated',
+true, NOW(), NOW());

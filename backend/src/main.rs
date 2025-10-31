@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
-        "postgresql://postgres:postgres@localhost:5432/frederick_ferments".to_string()
+        "postgresql://postgres:postgres@localhost:5433/frederick_ferments".to_string()
     });
 
     // Connect to database
